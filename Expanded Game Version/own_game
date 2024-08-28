@@ -1,0 +1,339 @@
+import random
+import name
+import own_train
+import shop
+
+name_dict = {"hunter_name": 'Bob'}  # set default name as 'Bob'
+enchant_dict = {"enchant_used": False, "count_enchant": False}
+
+
+def game_heading():
+    title = 'Mousehunt'
+    logo = '''
+
+       ____()()
+      /      @@
+`~~~~~\_;m__m._>o
+'''
+    author = 'An INFO1110/COMP9001 Student'
+    credits = f'''
+Inspired by Mousehunt© Hitgrab
+Programmer - {author}
+Mice art - Joan Stark\n'''
+    print(f'{title}{logo}{credits}')
+
+
+def get_name(hunter_name: str):
+    # valid name
+    if name.is_valid_name(hunter_name):
+        print(f'Welcome to the Kingdom, Hunter {hunter_name}!')
+        name_dict.update({"hunter_name": hunter_name})
+    else:
+        # invalid name
+        hunter_name = 'Bob'
+        print(f'Welcome to the Kingdom, Hunter {hunter_name}!')
+        name_dict.update({"hunter_name": hunter_name})
+
+
+def set_name():
+    return name_dict["hunter_name"]
+
+
+def enchanted():
+    return enchant_dict["enchant_used"]
+
+
+def get_game_menu():
+    return '1. Exit game\n2. Join the Hunt\n3. The Cheese Shop\n4. Change Cheese'
+
+
+def train_or_not_train(hunter_name: str):
+    training_outcome = False
+    print('Before we begin, let\'s train you up!')
+
+    start_training_or_game = input('Press "Enter" to start training or "skip" to Start Game: ').lower().strip()
+
+    if start_training_or_game == 'skip':
+        trap = 'Cardboard and Hook Trap'
+        training_outcome = False
+        return training_outcome, trap
+
+    elif start_training_or_game == '':
+        print('')
+        own_train.main()
+        trap = own_train.get_trap()
+        training_outcome = True
+    return training_outcome, trap
+
+
+def change_cheese(hunter_name: str, \
+                  trap: str, cheese: list, \
+                  e_flag: bool = False) -> tuple:
+    print('')
+    trap_status = False
+    trap_cheese = None
+
+    cheddar_quantity = cheese[0][1]
+    marble_quantity = cheese[1][1]
+    swiss_quantity = cheese[2][1]
+
+    cheddar = cheese[0][0].lower()
+    marble = cheese[1][0].lower()
+    swiss = cheese[2][0].lower()
+
+    while True:
+        print(f'''Hunter {hunter_name}, you currently have:
+Cheddar - {cheddar_quantity}
+Marble - {marble_quantity}
+Swiss - {swiss_quantity}\n''')
+
+        cheese_name = input('Type cheese name to arm trap: ').lower().strip()
+        if cheese_name == 'back':
+            trap_status = False
+            trap_cheese = None
+            break
+
+        # invalid cheese name
+        if cheese_name == 'cheddar':
+            cheese_quantity = cheddar_quantity
+        elif cheese_name == 'marble':
+            cheese_quantity = marble_quantity
+        elif cheese_name == 'swiss':
+            cheese_quantity = swiss_quantity
+        else:
+            print('No such cheese!\n')
+            trap_status = False
+            trap_cheese = None
+            continue
+
+        # check if the trap is armed
+        if trap_cheese is None and cheese_quantity == 0:
+            print('Out of cheese!\n')
+            trap_status = False
+            trap_cheese = None
+            continue
+        else:
+            enchant_status = enchanted()
+            if e_flag is True and not enchant_status:
+                if cheese_name == 'cheddar':
+                    print(f'Your {trap} has a one-time enchantment' + \
+                          ' granting +25 points drop by next Brown mouse.')
+                elif cheese_name == 'marble':
+                    print(f'Your {trap} has a one-time enchantment' + \
+                          ' granting +25 gold drop by next Brown mouse.')
+                elif cheese_name == 'swiss':
+                    print(f'Your {trap} has a one-time enchantment' + \
+                          ' granting +0.25 attraction to Tiny mouse.')
+
+            # valid cheese name & valid cheese quantities
+            confirm_arm = input('Do you want to arm your trap' + \
+                                f' with {cheese_name.capitalize()}? ')
+
+            if confirm_arm.lower().strip() == 'no':
+                print('')
+                trap_status = False
+                trap_cheese = None
+                continue
+            elif confirm_arm.lower().strip() == 'back':
+                trap_status = False
+                trap_cheese = None  # return None if not armed
+                break
+            elif confirm_arm.lower().strip() == 'yes':
+                e_flag = False
+                trap_status = True
+                enchant_used = True
+                trap_cheese = cheese_name.capitalize()
+                enchant_dict.update({"enchant_used": enchant_used})
+
+                if enchant_used is True:
+                    if not enchant_dict["count_enchant"]:
+                        print(f'{trap} is now armed with {cheese_name.capitalize()}!')
+                        count_enchant = True
+                        enchant_dict.update({"count_enchant": count_enchant})
+                    else:
+                        trap = trap.replace("One-time Enchanted ", "")
+                        print(f'{trap} is now armed with {cheese_name.capitalize()}!')
+                else:
+                    print(f'{trap} is now armed with {cheese_name.capitalize()}!')
+
+                # set allowed hunts to the quantity of cheddar cheese
+                if cheese_name == cheddar:
+                    allowed_hunts = cheddar_quantity
+                elif cheese_name == marble:
+                    allowed_hunts = marble_quantity
+                elif cheese_name == swiss:
+                    allowed_hunts = swiss_quantity
+                break
+    return trap_status, trap_cheese
+
+
+def consume_cheese(to_eat: str, cheese: list) -> None:
+    i = 0
+    while i < len(cheese):
+        if cheese[i][0].lower() == to_eat.lower():  # get cheese name(s)
+            if cheese[i][1] > 0:    # get cheese quantities
+                # check EACH cheese type's quantities
+                # deduct cheese if match the cheese name
+                cheese[i][1] -= 1
+                break
+            else:
+                cheese[i][1] = 0  # return 0 if cheese has a quantity of 0
+                # i += 1          # if not match, go to next cheese type
+                break
+        i += 1
+
+def hunt(gold: int, cheese: list, trap_cheese: str | None, points: int) -> tuple:
+    award_points = 115
+    award_gold = 125
+    allowed_hunts = 0
+
+    cheddar_quantity = cheese[0][1]
+    marble_quantity = cheese[1][1]
+    swiss_quantity = cheese[2][1]
+
+    cheese_name = (cheese[0][0], cheese[1][0], cheese[2][0])
+    cheddar = cheese_name[0]
+    marble = cheese_name[1]
+    swiss = cheese_name[2]
+
+    i = 0
+    flag = False
+
+    while (flag or i < 5):  # limit maximum 5 hunts
+        print('Sound the horn to call for the mouse...')
+        sound_horn_call_mouse = input('Sound the horn by typing "yes": ')
+        sound_call = sound_horn_call_mouse.lower().strip()
+
+        if sound_call == 'yes':
+
+            # insufficient cheese
+            has_cheese = (cheddar_quantity > 0) or \
+                         (marble_quantity > 0) or \
+                         (swiss_quantity > 0)
+
+            if not has_cheese or trap_cheese is None:
+                print('Nothing happens. You are out of cheese!')
+                allowed_hunts = 0
+                i += 1  # continue the loop
+
+            else:  # check armed cheese
+                if (trap_cheese is not None and trap_cheese == cheddar):
+                    allowed_hunts = cheddar_quantity
+                elif (trap_cheese is not None and trap_cheese == marble):
+                    allowed_hunts = marble_quantity
+                elif (trap_cheese is not None and trap_cheese == swiss):
+                    allowed_hunts = swiss_quantity
+
+                if allowed_hunts > 0:
+                    successful_hunt = random.random() <= 0.5
+
+                    if successful_hunt:
+                        if trap_cheese == cheddar:
+                            trap_cheese = 'cheddar'
+                        elif trap_cheese == marble:
+                            trap_cheese = 'marble'
+                        elif trap_cheese == swiss:
+                            trap_cheese = 'swiss'
+                        consume_cheese(trap_cheese, cheese)
+                        print('Caught a Brown mouse!')
+                        gold += award_gold
+                        points += award_points
+                        allowed_hunts -= 1
+                        i = 0  # reset the loop
+                    else:
+                        print('Nothing happens.')
+                        gold += 0
+                        points += 0
+                        allowed_hunts -= 1
+                        i += 1  # continue the loop
+
+                        # update trap cheese to the current cheese & call
+                        if trap_cheese == cheddar:
+                            trap_cheese = 'cheddar'
+                        elif trap_cheese == marble:
+                            trap_cheese = 'marble'
+                        elif trap_cheese == swiss:
+                            trap_cheese = 'swiss'
+                        consume_cheese(trap_cheese, cheese)
+                else:
+                    if allowed_hunts == 0:
+                        print('Nothing happens. You are out of cheese!')
+                        i += 1
+        elif sound_call == 'stop hunt':
+            return gold, points
+            break
+        else:
+            print('Do nothing.')
+            gold += 0
+            points += 0
+            i += 1  # make the loop continues
+        print(f'My gold: {gold}, My points: {points}\n')
+
+        # hunt failed 5 times consequently
+        if i == 5:
+            cont_hunt = input('Do you want to continue to hunt? ').lower().strip()
+            if cont_hunt == 'no':
+                return gold, points
+            elif cont_hunt == 'yes' or cont_hunt != 'no':
+                flag = True
+                i = 0  # reset the loop
+    return gold, points
+
+
+def main():
+    gold = 125
+    points = 0
+    trap_cheese = None
+    game_menu_selection = None
+    cheese = [["Cheddar", 0], ["Marble", 0], ["Swiss", 0]]
+
+    game_heading()
+    hunter_name = input('What\'s ye name, Hunter?\n')
+    get_name(hunter_name)                   # validate name format
+    hunter_name = name_dict["hunter_name"]  # get hunter_name
+
+    e_flag, trap = train_or_not_train(hunter_name)
+
+    while True:
+        print(f'\nWhat do ye want to do now, Hunter {hunter_name}?')
+        game_menu = get_game_menu()
+        print(game_menu)
+
+        while True:
+            menu = input("Enter a number between 1 and 4: ").strip()
+            game_menu_selection = menu
+
+            if game_menu_selection == '1':
+                quit()
+
+            elif game_menu_selection == '2':
+                hunt_gold, hunt_point = hunt(gold, cheese, trap_cheese, points)
+                gold = hunt_gold
+                points = hunt_point
+                break
+
+            elif game_menu_selection == '3':
+                new_gold, new_cheese, shop_menu = shop.run(trap, gold, cheese)
+                gold = new_gold
+                break
+
+                if shop_menu.lower().strip() == 'Leave Shop':
+                    continue
+                else:
+                    pass
+
+            elif game_menu_selection == '4':
+                trap_status, trap_cheese = change_cheese(hunter_name, trap, cheese, e_flag)
+                break
+
+            elif not game_menu_selection.isdigit():
+                print("Invalid input.")
+                continue
+
+            elif not 1 <= int(game_menu_selection) <= 4:
+                print("Must be between 1 and 4.")
+                continue
+
+
+if __name__ == '__main__':
+    main()
