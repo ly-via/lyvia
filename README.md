@@ -1,4 +1,4 @@
-#Mousehunt: A Text-Based Adventure Game in Python
+# Mousehunt: A Text-Based Adventure Game in Python
 This project is a text-based version of the Mousehunt game developed in Python. The game simulates a mouse-hunting adventure where players take on the role of a hunter, using different traps and cheeses to catch mice. The project was expanded in a second phase to incorporate object-oriented design principles, improving code organization and game mechanics.
 
 ## Project Overview
