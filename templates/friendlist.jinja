@@ -1,0 +1,180 @@
+<!-- 
+Display friend list page
+-->
+{% extends 'base.jinja' %}
+
+
+{% block content %} 
+   <style>
+    nav {
+        border-bottom: 1px solid black;
+        overflow: auto
+    }
+
+    .text  {
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    .home-button {
+        float: left;
+        margin-top: 15px;
+        margin-right: 180px;
+    }
+
+    .chat-button {
+        margin-top: 20px;
+    }
+
+</style>
+
+
+<!--Navbar, you'll see the username here-->
+<nav style="border-bottom: 1px solid black;">
+    <button class="home-button" onclick="to_homepage()">Home</button>
+    <ol style="float: right">
+        <li style="display:inline-block">Username:  {{ username }} </li>
+    </ol>
+</nav>
+
+<h1>Friends List</h1>
+
+    <!-- display friend list in check boxes -->
+    <form id="friendlist-checkbox-form" action="{{ url_for('display_friendlist', username=username) }}" method="POST">
+        {# {{ csrf.form_field() }} #}
+        <input type="hidden" id="action" name="action" value="">
+        <input type="hidden" id="username" name="username" value="{{ username }}">
+        <input type="hidden" id="online_friend" name="online_friend" value="">
+        {% if another_friend_usernames %}
+            {% for friend_username in another_friend_usernames %}
+                <input type="checkbox" id="{{ friend_username }}" name="friend_usernames" value="{{ friend_username }}">
+                
+                {# USYD CODE CITATION ACKNOWLEDGEMENT
+                I declare that the following lines of code have been taken from the
+                website titled: "How to show users online or offline in real time using flask and socket io even user close the browser without logout?"
+                Original URL
+                https://github.com/miguelgrinberg/Flask-SocketIO/issues/1443 #}
+
+                {# <label for="{{ friend_username }}">{{ friend_username }}</label><br> #}
+                <label for="{{ friend_username }}">{{ friend_username }} 
+
+                    {# print online status for each friend parsed from app.py #}
+                    {% if friend_status[friend_username] == True %} 
+                        {# REF : https://www.w3schools.com/tags/tag_span.asp #}
+                        <span style="color: green;">(Online)</span>
+                    {% else %} 
+                        <span style="color: grey;">(Offline)</span>
+                    {% endif %}
+                </label><br>
+            {% endfor %}
+            <button class="chat-button" onclick="start_chatting()">Chat</button>
+        {% elif friend_usernames %}
+            {% for friend_username in friend_usernames %}
+                <input type="checkbox" id="{{ friend_username }}" name="friend_usernames" value="{{ friend_username }}">
+                
+                {# USYD CODE CITATION ACKNOWLEDGEMENT
+                I declare that the following lines of code have been taken from the
+                website titled: "How to show users online or offline in real time using flask and socket io even user close the browser without logout?"
+                Original URL
+                https://github.com/miguelgrinberg/Flask-SocketIO/issues/1443 #}
+
+                {# <label for="{{ friend_username }}">{{ friend_username }}</label><br> #}
+                <label for="{{ friend_username }}">{{ friend_username }} 
+
+                    {# print online status for each friend parsed from app.py #}
+                    {% if friend_status[friend_username] == True %} 
+                        {# REF : https://www.w3schools.com/tags/tag_span.asp #}
+                        <span style="color: green;">(Online)</span>
+                    {% else %} 
+                        <span style="color: grey;">(Offline)</span>
+                    {% endif %}
+                </label><br>
+            {% endfor %}
+            <button class="chat-button" onclick="start_chatting()">Chat</button>
+        {% endif %}
+
+        {% if not another_friend_usernames and not friend_usernames %}
+            <p>Oh no! Nothing to show here, try adding some friends :)</p>
+        {% endif %}
+    </form>
+
+    <script>
+        function isValidURL(string) {
+            if (string.length == 0) {  return false;  }
+            if (string[0] == "/") {  return true;  }
+            return false;
+        }
+
+        async function to_homepage() {
+            {# let homeURL = "{{ url_for('homepage', username=username) }}";
+            window.location.href = homeURL; #}
+            let homebuttonsURL = "{{ url_for('table', username=username) }}";
+            window.location.href = homebuttonsURL;
+        }   
+
+        function start_chatting() {
+            let friendlistURL = "{{ url_for('display_friendlist', username=username) }}";
+            window.location.href = friendlistURL; 
+
+            // USYD CODE CITATION ACKNOWLEDGEMENT
+            // I declare that the following lines of code have been taken from the
+            // website titled: "How to get all checked checkboxes"
+            // Original URL
+            // https://stackoverflow.com/questions/8563240/how-to-get-all-checked-checkboxes
+            var checkbox = document.querySelectorAll('input[type="checkbox"]:checked');
+
+            // convert friend_status dict to JSON obj for JavaScript to access
+            // USYD CODE CITATION ACKNOWLEDGEMENT
+            // I declare that the following lines of code have been taken from the
+            // website titled: "i cant pass data from python flask api to javascript by tojson"
+            // Original URL
+            // https://stackoverflow.com/questions/74583764/i-cant-pass-data-from-python-flask-api-to-javascript-by-tojson
+            var friend_status = {{ friend_status | tojson }};
+
+            if (checkbox.length > 0) { // at least one checkbox is checked
+                let offline_friends = [];
+                let online_friend = "";
+                {# let online_friends = []; #}
+                for (var i = 0; i < checkbox.length; i++) {
+                    // get the friend username from checkbox
+                    var friend_username = checkbox[i].value; 
+                    // if the checked friend is "offline", put into offline_friends[]
+                    if (!friend_status[friend_username]) {
+                        offline_friends.push(friend_username);
+                    } 
+                    if (friend_status[friend_username]) {
+                        online_friend = friend_username;
+                        {# online_friends.push(friend_username); #}
+                    }
+                }
+                
+                if (online_friend) {
+                    {# alert("ONLINEEEEEEEEEE " + online_friend); #}
+                    document.getElementById("online_friend").value = online_friend;
+                    window.location.href = "{{ url_for('homepage', username=username, online_friend=online_friend) }}";
+                }
+                // check if offline_friends[] is empty, all friends are online
+                // USYD CODE CITATION ACKNOWLEDGEMENT
+                // I declare that the following lines of code have been taken from the
+                // website titled: "Check if an array is empty or not in JavaScript"
+                // Original URL
+                // hhttps://www.geeksforgeeks.org/check-if-an-array-is-empty-or-not-in-javascript/
+                if (!offline_friends.length && online_friend) { 
+                    document.getElementById("action").value = "chat";
+                    document.getElementById("username").value = "{{ username }}";
+                    document.getElementById("online_friend").value = online_friend;
+                    online_friend.value = online_friend_val;
+                    action.value = "chat";
+
+                    document.getElementById("friendlist-checkbox-form").submit();
+                    let homeURL = `/home?username={{ username }}&online_friend=${online_friend}`;
+                    window.location.href = homeURL;
+                } else {
+                    alert("The selected friend(s) " + offline_friends + " are offline.");
+                }
+            } else {
+                alert("Error: Select at least one friend to chat.");
+            }
+        }
+    </script>
+{% endblock %}
