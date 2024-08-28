@@ -21,16 +21,16 @@ The project involves designing a survey to collect data on a chosen topic, follo
 
 ### Approach
 
-1. Survey Design and Data Collection:
+**1. Survey Design and Data Collection:** 
 - Developed survey questions that align with the research question and ensure data collection on relevant variables.
 - Deployed the survey online and collected responses over a specified period.
 
-2. Data Analysis in R:
+**2. Data Analysis in R:**
 - Conducted data cleaning and preparation to ensure quality analysis.
 - Used ggplot2 to create visual representations of the data, highlighting key trends and insights.
 - Applied statistical models to investigate the relationships between variables and answer the research question.
 
-3. Reporting and Communication:
+**3. Reporting and Communication:**
 - Drafted a report in a format suitable for a client, summarizing the analysis and providing actionable recommendations.
 - Created a video presentation to effectively communicate the findings in a concise and persuasive manner.
 
@@ -41,4 +41,3 @@ The project involves designing a survey to collect data on a chosen topic, follo
 
 ### Results
 The project demonstrates a complete end-to-end data science process, from data collection to analysis and reporting. The findings offer valuable insights that inform evidence-based decision-making, highlighting the power of data in answering complex research questions.
-
