@@ -1,0 +1,115 @@
+import random
+import art
+
+TYPE_OF_MOUSE = (None, "Brown", "Field", "Grey", "White", "Tiny")
+
+
+def loot_lut(mouse_type: str | None) -> tuple:  # constructor 02
+    if mouse_type is None:
+        gold = 0
+        points = 0
+    else:
+        if mouse_type == 'Brown':
+            gold = 125
+            points = 115
+        elif mouse_type == 'Field':
+            gold = 200
+            points = 200
+        elif mouse_type == 'Grey':
+            gold = 125
+            points = 90
+        elif mouse_type == 'White':
+            gold = 100
+            points = 70
+        elif mouse_type == 'Tiny':
+            gold = 900
+            points = 200
+    return gold, points
+
+
+def generate_mouse(cheese, enchant) -> str | None:
+    prob = generate_probabilities(cheese, enchant)
+    random_mouse = random.random()
+
+    min_prob = prob[0]
+    first_prob = prob[0] + prob[1]
+    sec_prob = prob[0] + prob[1] + prob[2]
+    third_prob = prob[0] + prob[1] + prob[2] + prob[3]
+    max_prob = prob[0] + prob[1] + prob[2] + prob[3] + prob[4]
+
+    if 0 <= random_mouse < min_prob:
+        return TYPE_OF_MOUSE[0]
+    elif min_prob <= random_mouse < first_prob:
+        return TYPE_OF_MOUSE[1]
+    elif first_prob <= random_mouse < sec_prob:
+        return TYPE_OF_MOUSE[2]
+    elif sec_prob <= random_mouse < third_prob:
+        return TYPE_OF_MOUSE[3]
+    elif third_prob <= random_mouse < max_prob:
+        return TYPE_OF_MOUSE[4]
+    elif max_prob <= random_mouse < 1:
+        return TYPE_OF_MOUSE[5]
+
+
+def generate_probabilities(cheese_type, enchant):
+    prob = (0, 0, 0, 0, 0, 0)
+
+    if enchant is True:
+        if cheese_type == "Cheddar":
+            prob = (0.5, 0.1, 0.15, 0.1, 0.1, 0.05)
+        elif cheese_type == "Marble":
+            prob = (0.6, 0.05, 0.2, 0.05, 0.02, 0.08)
+        elif cheese_type == "Swiss":
+            prob = (0.45, 0.01, 0.05, 0.05, 0.04, 0.4)
+    if enchant is False:
+        if cheese_type == "Cheddar":
+            prob = (0.5, 0.1, 0.15, 0.1, 0.1, 0.05)
+        elif cheese_type == "Marble":
+            prob = (0.6, 0.05, 0.2, 0.05, 0.02, 0.08)
+        elif cheese_type == "Swiss":
+            prob = (0.7, 0.01, 0.05, 0.05, 0.04, 0.15)
+    return prob
+
+
+def generate_coat(mouse_type):
+    coat = ''
+    if mouse_type is None:
+        pass
+    else:
+        if mouse_type == "Brown":
+            coat = art.BROWN[1:-1]
+        elif mouse_type == "Field":
+            coat = art.FIELD[1:-1]
+        elif mouse_type == "Grey":
+            coat = art.GREY[1:-1]
+        elif mouse_type == "White":
+            coat = art.WHITE[1:-1]
+        elif mouse_type == "Tiny":
+            coat = art.TINY[1:-1]
+        coat = getattr(art, mouse_type.upper())
+    return coat
+
+class Mouse:
+    def __init__(self, cheese="Cheddar", enchant=False):
+        name = generate_mouse()
+        gold, points = loot_lut(name)
+        self.name = name
+        self.gold = gold
+        self.points = points
+        self.cheese = cheese
+        self.enchant = enchant
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_gold(self) -> int:
+        return self.gold
+
+    def get_points(self) -> int:
+        return self.points
+
+    def get_enchant(self) -> bool:
+        return self.enchant
+
+    def __str__(self) -> str:
+        return str(self.name)  # return value of 'name'
