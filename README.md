@@ -1,7 +1,5 @@
-# Chat Messaging Template
-This project contains the necessary scaffold in order to get your multi-million chat application idea started! The main technology driving this application is `socket.io` which allows two way communication between the client side and server side through so called "socket events". 
-
-Unfortunately, the maker of this template is lousy and forgot to put in the necessary security measures. It's your job to ensure a safe communication between users of your chat system. 
+# Secure end to end chat messaging tool
+This project is about a multi-million chat application. The main technology driving this application is `socket.io` which allows two way communication between the client side and server side through so called "socket events". 
 
 # Setup
 To setup, install these packages 
@@ -18,13 +16,13 @@ python3 app.py
 ```
 
 # Project Navigation
-The templates folder contains all of the HTML template files that will be served to the user. These HTML files, as you may have noticed, all has a `.jinja` extension. In actuality, these files also contain various Jinja extended syntax that makes rendering the data to the server a lot easier. See the comments on top of these files to know what they are.
+The templates folder contains all of the HTML template files that will be served to the user. These HTML files have a `.jinja` extension. In actuality, these files also contain various Jinja extended syntax that makes rendering the data to the server a lot easier. See the comments on top of these files to know what they are.
 
-`app.py` is where the flask application "lives" and this is where it is initialized, `db.py` is where the database interface is. `models.py` is where you define the various database models. This is where you tell SQLAlchemy how to map the SQL tables into Python objects. Finally `socket_routes.py` is where you can find out what happens when JS emits a socket event to the server.
+`app.py` is where the flask application "lives" and this is where it is initialized, `db.py` is where the database interface is. `models.py` is where various database models are defined. This is where SQLAlchemy knows how to map the SQL tables into Python objects. Finally `socket_routes.py` is where you can find out what happens when JS emits a socket event to the server.
 
-The static folder is where you keep all of the website's assets, this includes your JS and CSS scripts, images, videos?, etc. 
+The static folder is where all of the website's assets are kept, this includes JS and CSS scripts, images, etc. 
 
-Finally, the database folder is what makes everything persistent. This is where your database is stored. Delete the database folder to do a clean wipe of your entire database. But beware, with great power, ok whatever you know the rest of the line.
+Finally, the database folder is what makes everything persistent. This is where the database is stored. 
 
 # Usage
 To use the app, setup and run the app as per the instructions above. Also, if you're using VSCode, I recommend installing the Better Jinja extension (it's not perfect unfortunately, but it's enough). 
