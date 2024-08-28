@@ -1,0 +1,114 @@
+# set default greeting statement
+greeting = 'Welcome to The Cheese Shop!\nCheddar - 10 gold'
+
+
+# display menu
+def display_menu():
+    print('''\nHow can I help ye?
+1. Buy cheese
+2. View inventory
+3. Leave shop''')
+
+
+def buy_cheese(gold: int) -> tuple:
+
+    # set default values
+    cheddar_price = 10
+
+    print(f'You have {gold} gold to spend.')
+
+    # input statement for cheese quantity
+    cheese_quantity = input('State [cheese quantity]: ')
+
+    while True:
+        # if 'enter' / 'back' is entered
+        if cheese_quantity == '' or cheese_quantity.lower().strip() == 'back':
+            return 0, 0     # to return 0 for gold_spent, cheese_bought
+            display_menu()  # return to menu & begin again
+            buy_cheese(gold)
+
+        # CHEESE PURCHASING : 0 / 1 word entered -- invalid command
+        elif cheese_quantity.split(' ')[0].lower().strip() != 'cheddar':
+            print('Sorry, did not understand.')
+            return 0, 0
+
+        # check if cheese quantity entered is zero or less
+        # get the 2nd index from input given for cheese quantity
+        elif not int(cheese_quantity.split(' ')[1]) > 0:
+            print('Must purchase a positive amount of cheese.')
+            return 0, 0
+
+        # CHEESE PURCHASING : 2 words entered -- valid command
+        # cheese quantity entered is +ve value
+        elif int(cheese_quantity.split(' ')[1]) > 0:
+
+            # get the amount of gold_spent
+            total_spent = int(cheddar_price) * int(cheese_quantity.split(' ')[1])
+
+            # comparing total_spent & default_gold
+            if total_spent > gold:
+
+                # over spent -> prompt error msg & back to menu
+                print('Insufficient gold.')
+                return 0, 0
+                display_menu()
+                buy_cheese(gold)
+
+            else:
+
+                # VALID COMMAND : print cheddar's quantity : (8th input's index)
+                print(f'Successfully purchase {cheese_quantity[8:]} cheddar.')
+
+                # calculate gold spent
+                gold_spent = 10 * int(cheese_quantity.split(' ')[1])
+
+                # calculate amount of cheese bought
+                cheese_bought = int(cheese_quantity.split(' ')[1])
+
+                # calculate total gold on hand
+                gold = gold - gold_spent
+
+            return gold_spent, cheese_bought
+    return gold_spent, cheese_bought
+
+def display_inventory(gold: int, cheese: int, trap: str) -> None:
+    print(f'Gold - {gold}\nCheddar - {cheese}\nTrap - {trap}')
+
+
+def main():
+    # set default values
+    gold = 125
+    cheese = 0
+    trap = 'Cardboard and Hook Trap'
+    print(greeting)
+
+    while True:
+        display_menu()            # display menu
+        select_menu = None        # set select_menu to None
+        choice = input().strip()  # get user input for menu
+        select_menu = choice      # initialize select_menu from input
+
+        # menu redirection based on input selection
+        if select_menu == '1':
+
+            # parse gold_spent, cheese_bought from buy_cheese()
+            gold_spent, cheese_bought = buy_cheese(gold)
+
+            # calculate total gold on hand
+            gold = gold - gold_spent
+
+            # calculate amount of cheese on hand
+            cheese = cheese + cheese_bought
+
+        elif select_menu == '2':
+            display_inventory(gold, cheese, trap)
+
+        elif select_menu == '3':
+            return 'Leave Shop'
+
+        else:
+            quit()
+
+
+if __name__ == '__main__':
+    main()

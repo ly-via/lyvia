@@ -1,0 +1,164 @@
+cheese_dict = {"value": 0}
+CHEESE_MENU = (("Cheddar", 10), ("Marble", 50), ("Swiss", 100))
+
+cheese_name = (CHEESE_MENU[0][0], CHEESE_MENU[1][0], CHEESE_MENU[2][0])
+cheese_price = (CHEESE_MENU[0][1], CHEESE_MENU[1][1], CHEESE_MENU[2][1])
+
+cheddar, marble, swiss = cheese_name[0].lower(), \
+                         cheese_name[1].lower(), \
+                         cheese_name[2].lower()
+
+greeting = '''Welcome to The Cheese Shop!
+Cheddar - 10 gold
+Marble - 50 gold
+Swiss - 100 gold'''
+
+
+def get_cheese():
+    return cheese_dict["value"]
+
+
+def display_menu():
+    print('''\nHow can I help ye?
+1. Buy cheese
+2. View inventory
+3. Leave shop''')
+
+
+def buy_cheese(gold: int) -> tuple:
+
+    gold_spent = 0
+    cheddar_bought = 0
+    marble_bought = 0
+    swiss_bought = 0
+
+    while True:
+        print(f'You have {gold} gold to spend.')
+
+        cheese_choice = input('State [cheese quantity]: ')
+        if cheese_choice == '':
+            print(f'We don\'t sell {cheese_choice}!')
+            continue
+        cheese_split = cheese_choice.split()
+
+        player_request = cheese_split[0]
+        player_request = player_request.lower().strip()
+
+        if player_request == 'back':
+            break
+        # INVALID CHEESE NAME
+        elif player_request != cheddar and \
+            player_request != marble and \
+            player_request != swiss:
+            print(f'We don\'t sell {player_request}!')
+            continue
+
+        # INVALID CHEESE QUANTITY
+        if len(cheese_split) < 2:
+            print('Missing quantity.')
+            continue
+
+        cheese_quantity = cheese_split[1]
+
+        if cheese_quantity.startswith('-'):
+            print('Must purchase positive amount of cheese.')
+            continue
+        elif not cheese_quantity.isdigit():
+            print('Invalid quantity.')
+            continue
+        else:
+            cheese_quantity = int(cheese_quantity)
+            if cheese_quantity == 0:
+                print('Must purchase positive amount of cheese.')
+                continue
+            else:
+                # VALID CHEESE QUANTITY
+                if player_request == cheddar:
+                    cheese_price_index = 0
+                elif player_request == marble:
+                    cheese_price_index = 1
+                else:
+                    cheese_price_index = 2
+
+                total_spent = cheese_price[cheese_price_index] * cheese_quantity
+
+                if total_spent > gold:
+                    print('Insufficient gold.')  # over spent
+                    continue
+                else:
+                    # VALID COMMANDS
+                    print(f'Successfully purchase {cheese_quantity} {player_request}.')
+
+                    gold_spent += total_spent
+
+                    if player_request == cheddar:
+                        cheddar_bought += cheese_quantity
+                    elif player_request == marble:
+                        marble_bought += cheese_quantity
+                    else:
+                        swiss_bought += cheese_quantity
+                    gold -= total_spent
+
+    cheese_bought = (cheddar_bought, marble_bought, swiss_bought)
+    # check if any cheese has been bought
+    if cheddar_bought == 0 and marble_bought == 0 and swiss_bought == 0:
+        cheese_bought = (0, 0, 0)
+        return gold_spent, cheese_bought
+    else:
+        return gold_spent, cheese_bought
+
+
+def display_inventory(gold: int, cheese: list, trap: str, enchant_used: bool) -> None:
+    cheddar_quantity = cheese[0][1]
+    marble_quantity = cheese[1][1]
+    swiss_quantity = cheese[2][1]
+
+    if enchant_used is True:
+        trap = trap.replace("One-time Enchanted ", "")
+
+    print(f'''Gold - {gold}
+Cheddar - {cheddar_quantity}
+Marble - {marble_quantity}
+Swiss - {swiss_quantity}
+Trap - {trap}''')
+
+
+def run(trap, gold, cheese, enchant_used):
+
+    while True:
+        print(greeting)
+
+        while True:
+            display_menu()
+            select_menu = None
+            choice = input().strip()
+            select_menu = choice
+
+            if select_menu == '1':
+                gold_spent, cheese_bought = buy_cheese(gold)
+                gold -= gold_spent
+
+                cheese[0][1] += cheese_bought[0]
+                cheese[1][1] += cheese_bought[1]
+                cheese[2][1] += cheese_bought[2]
+                cheese_dict.update({"value": cheese})
+
+            elif select_menu == '2':
+                display_inventory(gold, cheese, trap, enchant_used)
+
+            elif select_menu == '3':
+                return gold, cheese, 'Leave Shop'
+            else:
+                print('I did not understand.')
+                continue
+
+
+def main():
+    gold = 125
+    cheese = [["Cheddar", 0], ["Marble", 0], ["Swiss", 0]]
+    trap = 'Cardboard and Hook Trap'
+    run(trap, gold, cheese)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,176 @@
+import random
+import name
+import q4
+import own_shop
+import own_train
+
+
+# display game heading
+def game_heading():
+    title = 'Mousehunt'
+    logo = '''
+
+       ____()()
+      /      @@
+`~~~~~\_;m__m._>o
+'''
+    author = 'An INFO1110/COMP9001 Student'
+    credits = f'''
+Inspired by Mousehunt© Hitgrab
+Programmer - {author}
+Mice art - Joan Stark\n'''
+    print(f'{title}{logo}{credits}')
+
+
+# get & check name
+def get_name(player_name):
+
+    # check name conditions
+    if name.is_valid_name(player_name):
+        print(f'Welcome to the Kingdom, Hunter {player_name}!')
+    else:
+        # INVALID NAME : set default name as Bob
+        player_name = 'Bob'
+        print(f'Welcome to the Kingdom, Hunter {player_name}!')
+    return player_name
+
+
+# display menu
+def display_game_menu(player_name):
+    print(f'''\nWhat do ye want to do now, Hunter {player_name}?
+1. Exit game
+2. Join the Hunt
+3. The Cheese Shop''')
+
+
+def train_or_not_train(player_name):
+    training_outcome = False
+    print('Before we begin, let\'s train you up!')
+
+    # get user input to start training or start game
+    start_training_or_game = input('Press "Enter" to start training or "skip" to Start Game: ').lower().strip()
+
+    # 'skip' inputted
+    if start_training_or_game == 'skip':
+        trap = 'Cardboard and Hook Trap'
+        training_outcome = False
+        return training_outcome, trap
+
+    # 'Enter' inputted
+    elif start_training_or_game == '' or start_training_or_game != 'skip':
+        print('')
+        q4.main()
+        trap = q4.get_trap()
+        training_outcome = own_train.training(player_name)
+
+        if training_outcome is False:
+            trap = 'Cardboard and Hook Trap'
+        return trap
+
+        return training_outcome, trap
+
+
+def join_hunt(gold, point, player_name, training_outcome):
+
+    award_points = 115
+    award_gold = 125
+
+    i = 0
+    flag = False
+    hunt_cheese = own_shop.get_cheese()
+    # limit maximum hunting times to 5
+    while (flag or i < 5):
+
+        print('Sound the horn to call for the mouse...')
+        sound_horn_call_mouse = input('Sound the horn by typing "yes": ')
+        sound_call = sound_horn_call_mouse.lower().strip()
+
+        # 'yes' inputted
+        if sound_call == 'yes':
+            # check if there are enough cheese
+            if hunt_cheese == 0:
+                print('Nothing happens. You are out of cheese!')
+                i += 1  # make the loop continues
+            else:
+                successful_hunt = random.random() <= 0.5
+                if successful_hunt:
+                    print('Caught a Brown mouse!')
+                    gold += award_gold
+                    point += award_points
+                    hunt_cheese -= 1
+                    i = 0  # reset the loop
+                else:
+                    print('Nothing happens.')
+                    gold += 0
+                    point += 0
+                    hunt_cheese -= 1
+                    i += 1  # make the loop continues
+
+        # 'stop hunt' inputted
+        elif sound_call == 'stop hunt':
+            return gold, hunt_cheese, point
+            break
+        else:
+            print('Do nothing.')
+            gold += 0
+            point += 0
+            i += 1  # make the loop continues
+        print(f'My gold: {gold}, My points: {point}\n')
+
+        # failed hunt for 5 times in a row
+        if i == 5:
+            cont_hunt = input('Do you want to continue to hunt? ').lower().strip()
+            if cont_hunt == 'no':
+                return gold, hunt_cheese, point
+            elif cont_hunt == 'yes' or cont_hunt != 'no':
+                flag = True
+                i = 0  # reset the loop
+            else:
+                return gold, hunt_cheese, point
+                break
+
+
+def main():
+
+    # set default values
+    gold = 125
+    cheese = 0
+    point = 0
+
+    game_heading()
+    player_name = input('What\'s ye name, Hunter?\n')  # get user name
+    player_name = get_name(player_name)
+
+    training_outcome = train_or_not_train(player_name)
+
+    game_menu_selection = None
+
+    while True:
+        display_game_menu(player_name)
+        menu = input().strip()
+        game_menu_selection = menu
+        if game_menu_selection == 1:
+            quit()
+
+        elif game_menu_selection == '2':
+            hunt_gold, hunt_cheese, hunt_point = join_hunt(gold, point, player_name, training_outcome)
+            gold = hunt_gold
+            cheese = hunt_cheese
+            point = hunt_point
+
+        elif game_menu_selection == '3':
+            trap = q4.get_trap()
+            new_gold, new_cheese, shop_menu = own_shop.run(trap, gold, cheese)
+            gold = new_gold
+            cheese = new_cheese
+
+            if shop_menu.lower().strip() == 'Leave Shop':
+                continue
+            else:
+                pass
+        else:
+            exit()
+
+
+if __name__ == '__main__':
+    main()

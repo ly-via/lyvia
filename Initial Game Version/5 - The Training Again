@@ -1,0 +1,29 @@
+// import q4
+
+def looping():
+    trap, cheddar = q4.setup_trap()
+    horn_input = q4.sound_horn()
+    hunt_status = q4.basic_hunt(trap, cheddar, horn_input)
+    q4.end(hunt_status)
+    training()
+
+
+def training():
+
+    cont_train = input('\nPress Enter to continue training and "no" to stop training: ')
+
+    if cont_train.lower().strip() == 'no' or cont_train != '':
+        pass
+    elif cont_train == '':
+        looping()
+    return cont_train
+
+
+def main():
+    q4.intro()
+    q4.travel_to_camp()
+    looping()
+
+
+if __name__ == '__main__':
+    main()

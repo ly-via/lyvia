@@ -1,0 +1,473 @@
+import os
+import shutil
+import sys
+from datetime import datetime
+
+
+def logging(logs: list, date: str, time: str) -> None:
+    dest_root = os.path.join("/home/logs/" + date)
+    if not os.path.exists(dest_root):
+        os.makedirs(dest_root)
+
+    filename = time + '.txt'
+    dest = os.path.join(dest_root, filename)
+    with open(dest, "w") as f:
+        i = 0
+        while i < len(logs):
+            f.write(logs[i] + '\n')
+            i += 1
+
+
+def verification(master: str, timestamp: str) -> list:
+    output = []
+    output.append(f'{timestamp} Start verification process.')
+    output.append(f'{timestamp} Extracting paths in configuration file.')
+
+    ''' EXTRACT PATHS FROM config.txt '''
+    if os.path.exists(master):
+        with open(master + 'config.txt', "r") as f:
+            read_line = f.readlines()      # extract all lines from config.txt
+        directories = []
+        total = 0
+        i = 0
+        while i < len(read_line):
+            lines = read_line[i].strip()
+            if lines.startswith('/'):
+                directories.append(lines)
+                total += 1
+            i += 1
+        total_directories = f'Total directories to check: {total}'
+        output.append(total_directories)
+
+    ''' CHECK DIRECTORIES '''
+    output.append(f'{timestamp} Checking if directories exists.')
+
+    file = open(master + "config.txt", "r")
+    line = file.readline()
+    directory = ''
+    while line != '':
+        line = line.strip()
+        if line.startswith('/'):
+            directory = line
+            if directory.endswith('/'):
+                if not os.path.exists(directory):
+                    output.append(f'{directory} NOT found')
+                else:
+                    output.append(f'{directory} is found!')
+        line = file.readline()
+    file.close()
+
+    ''' EXTRACT FILES master DIRECTORY '''
+    output.append(f'{timestamp} Extracting files in configuration file.')
+
+    file = open(master + "config.txt", "r")
+    line = file.readline()
+    i = 0
+    directory = ''
+    while line != '':
+        line = line.strip()
+        if line.startswith('/'):
+            directory = line
+        elif line.startswith('.'):
+            if directory.endswith('/'):
+                dir_abspath = directory + line[2:]
+                output.append("File to check: " + dir_abspath)
+                i += 1
+            else:
+                file_abspath = directory + '/' + line[2:]
+                output.append("File to check: " + file_abspath)
+                i += 1
+        line = file.readline()
+    file.close()
+    output.append(f'Total files to check: {i}')
+
+    ''' EXTRACT FILES master DIRECTORY '''
+    output.append(f'{timestamp} Checking if files exists.')
+
+    file = open(master + "config.txt", "r")
+    line = file.readline()
+    i = 0
+    directory = ''
+    while line != '':
+        line = line.strip()
+        if line.startswith('/'):
+            directory = line
+        elif line.startswith('.'):
+            if directory.endswith('/'):
+                dir_abspath = directory + line[2:]
+                if os.path.isfile(dir_abspath):
+                    output.append(dir_abspath + " found!")
+                else:
+                    output.append(dir_abspath + "NOT found!")
+                i += 1
+        line = file.readline()
+    file.close()
+
+    ''' CHECK FILES CONTENTS WITH master copy '''
+    output.append(f'{timestamp} Check contents with master copy.')
+
+    x = 0
+    i = 0
+    paths = []
+    master_dir = os.listdir(master)
+    # print(master_dir)
+    while x < len(master_dir):
+        y = master_dir[x]
+        all_master_dir = os.path.join(master, y)
+        if os.path.isdir(all_master_dir):
+            i = 0
+            sub_dir = os.listdir(all_master_dir)
+            while i < len(sub_dir):
+                f = sub_dir[i]
+                paths.append(os.path.join(all_master_dir, f))
+                i += 1
+        x += 1
+    sort_paths = sorted(paths)
+
+    file = open(master + "config.txt", "r")
+    line = file.readline()
+
+    directory = ''
+    dir_abspath_ls = []
+
+    while line != '':
+        line = line.strip()
+
+        if line.startswith('/'):
+            directory = line
+        elif line.startswith('.'):
+            if directory.endswith('/'):
+                dir_abspath = directory + line[2:]
+                dir_abspath_ls.append(dir_abspath)
+        line = file.readline()
+    file.close()
+
+    i = 0
+    similar_content = False
+    abnormalities_detected = False
+    while i < len(dir_abspath_ls):
+        with open(dir_abspath_ls[i], "r") as f1, open(sort_paths[i], "r") as f2:
+            line1 = f1.readlines()
+            line2 = f2.readlines()
+            j = 0
+            while j < len(line1) and j < len(line2):
+                if line1[j] != line2[j]:
+                    similar_content = False
+                    output.append(f'File name: {dir_abspath_ls[i]}, {line1[j-1].strip()}, {line2[j-1].strip()}')
+                    output.append(f'File name: {dir_abspath_ls[i]}, {line1[j].strip()}, {line2[j].strip()}')
+                    abnormalities_detected = True
+                    break
+                else:
+                    similar_content = True
+                j += 1
+            if similar_content:
+                output.append(f'{dir_abspath_ls[i]} is same as {sort_paths[i]}: {similar_content}')
+        if abnormalities_detected:
+            output.append('Abnormalities detected...')
+            break
+        i += 1
+    if not abnormalities_detected:
+        output.append(f'{timestamp}  Verification complete.')
+    # https://stackoverflow.com/questions/4617034/how-can-i-open-multiple-files-using-with-open-in-python
+
+    # comparing 2 files
+    # https://www.geeksforgeeks.org/compare-two-files-line-by-line-in-python/
+    return output
+
+
+def installation(master: str, timestamp: str) -> list:
+    output = []
+    output.append(f'{timestamp} Start installation process.')
+    output.append(f'{timestamp} Extracting paths in configuration file.')
+
+    ''' EXTRACT ABSOLUTE PATHS TO DIRECTORIES FROM config.txt '''
+    if os.path.exists(master):
+        file = open(master + "config.txt", "r")
+        line = file.readline()
+        i = 0
+        directory = ''
+        while line != '':
+            line = line.strip()
+            if line.startswith('/'):
+                i += 1
+            line = file.readline()
+        file.close()
+        output.append(f'Total directories to create: {i}')
+
+    ''' CREATE NEW DIRECTORIES '''
+    output.append(f'{timestamp} Create new directories.')
+
+    file = open(master + "config.txt", "r")
+    line = file.readline()
+    directory = ''
+    while line != '':
+        line = line.strip()
+        if line.startswith('/'):
+            directory = line
+            if directory.endswith('/'):
+                if not os.path.exists(directory):
+                    os.mkdir(directory)
+                    output.append(f'{directory} is created successfully.')
+                else:
+                    output.append(f'{directory} exists. Skip directory creation.')
+                    # break
+        line = file.readline()
+    file.close()
+
+    ''' EXTRACT ALL ABSPATH FOUND IN master DIRECTORY '''
+    output.append(f'{timestamp} Extracting paths of all files in {master}.')
+
+    i = 0
+    paths = []
+    master_dir = os.listdir(master)
+    x = 0
+    while x < len(master_dir):
+        y = master_dir[x]
+        all_master_dir = os.path.join(master, y)
+        if os.path.isdir(all_master_dir):
+            i = 0
+
+            while i < len(os.listdir(all_master_dir)):
+                f = os.listdir(all_master_dir)[i]
+                paths.append(os.path.join(all_master_dir, f))
+                i += 1
+        x += 1
+
+    # listing all absolute paths from /samples/
+    samples = ''
+    i = 0
+    sort_paths = sorted(paths)
+    while i < len(sort_paths):
+        each_sample = sort_paths[i]
+        samples += f'Found: {each_sample}\n'
+        i += 1
+    output.extend(samples.split('\n')[:-1])
+
+    # USYD CODE CITATION ACKNOWLEDGEMENT
+    #
+    # I declare that the os.listdir() in while loop was referenced from Stackoverflow
+    #
+    # Original URL
+    # https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
+    # Last access 8 May, 2023
+
+    ''' CREATE NEW FILES '''
+    output.append(f'{timestamp}  Create new files.')
+
+    with open(master + 'config.txt', "r") as f:
+        read_line = f.readlines()      # extract all lines from config.txt
+    directories = []
+    total = 0
+    i = 0
+    while i < len(read_line):
+        lines = read_line[i].strip()   # convert from ls to string, no \n
+        if lines.startswith('./'):     # check if it's valid directory
+            directories.append(lines)  # add to ls
+            total += 1
+        i += 1
+
+    i = 0
+    files_paths = []
+    files_dir = master + "files/"
+    files_listdir = os.listdir(files_dir)
+    while i < len(files_listdir):
+        f = files_listdir[i]
+        files_paths.append(os.path.join(files_dir, f))
+        i += 1
+    # listing all absolute paths from /files/
+    i = 0
+    create_files = ''
+    copy_files_ls = []
+    sort_files_paths = sorted(files_paths)
+    while i < len(sort_files_paths):
+        f = sort_files_paths[i]
+        copy_files = shutil.copy(f, "/home/files/")
+        create_files += f'Creating file: {copy_files}\n'
+        copy_files_ls.append(copy_files)
+        i += 1
+    output.extend(create_files.split('\n')[:-1])
+
+    i = 0
+    samples_paths = []
+    samples_dir = os.path.join(master, "samples")
+
+    while i < len(os.listdir(samples_dir)):
+        f = os.listdir(samples_dir)[i]
+        samples_paths.append(os.path.join(samples_dir, f))
+        i += 1
+
+    i = 0
+    create_samples = ''
+    samples_ls = []
+    listed_in_config = []
+    final = None
+    copy_samples_ls = []
+    # sort alphabetically
+    sort_samples_paths = sorted(samples_paths)
+
+    while i < len(sort_samples_paths):
+        f = sort_samples_paths[i]
+        copy_sample = shutil.copy(f, "/home/samples/")
+        copy_samples_ls.append(copy_sample)
+        i += 1
+
+        # getting only the filename
+        filename = os.path.basename(copy_sample)
+        listed_filename = "./" + filename
+        samples_ls.append(listed_filename)
+        j = 0
+        duplicated = False
+        while j < len(directories) and not duplicated:
+            k = 0
+            # compare os & config.txt to find not listed file
+            if samples_ls[k] == directories[j]:
+                if samples_ls[0] == samples_ls[-1]:
+                    duplicated = True
+                listed_in_config.append(samples_ls[0])
+                final = f"/home/samples{samples_ls[k]}".replace('.', '', 1)
+            j += 1
+        k += 1
+    create_samples += f'Creating file: {final}\n'
+    output.extend(create_samples.split('\n')[:-1])  # get rid \n, split ls
+
+
+    ''' COPY FILES FROM master '''
+    output.append(f'{timestamp} Copying files.')
+
+    # locating files
+    files_root = "/home/master/files/"
+
+    i = 0
+    basenames_ls = []
+    while i < len(copy_files_ls):
+        filenames = copy_files_ls[i]
+        file_basenames = os.path.basename(filenames)
+        basenames_ls.append(file_basenames)
+        files_src = files_root + file_basenames
+        files_dest_root = "/home/files/"
+        files_dest = files_dest_root + file_basenames
+        i += 1
+
+        j = 0
+        while j < len(basenames_ls):
+            files_locating = f'Locating: {file_basenames}'
+            output.append(files_locating)
+            ori_files = f'Original path: {files_src}'
+            output.append(ori_files)
+            dest_files = f'Destination path: {files_dest}'
+            output.append(dest_files)
+            break
+
+    # locating sample
+    files_root = "/home/master/samples/"
+
+    i = 0
+    basenames_ls = []
+    while i < len(listed_in_config):
+        filenames = listed_in_config[i]
+        samples_basenames = os.path.basename(filenames)
+        basenames_ls.append(samples_basenames)
+        samples_src = files_root + samples_basenames
+        samples_dest_root = "/home/samples/"
+        samples_dest = samples_dest_root + samples_basenames
+        i += 1
+
+        j = 0
+        i = 0
+        duplicated = False
+        while j < len(basenames_ls) and not duplicated:
+            j = i + 1
+            while j < len(basenames_ls) and not duplicated:
+                if basenames_ls[i] == basenames_ls[j]:
+                    # print(basenames_ls)
+                    duplicated = True
+                j += 1
+            i += 1
+        samples_locating = f'Locating: {samples_basenames}'
+        output.append(samples_locating)
+        try:
+            copy_files
+            ori_samples = f'Original path: {samples_src}'
+            output.append(ori_samples)
+            dest_samples = f'Destination path: {samples_dest}'
+            output.append(dest_samples)
+            break
+        except FileNotFoundError:
+            ori_not_found = f'Original path: {samples_src} is not found.'
+            output.append(ori_not_found)
+
+    ''' SUCCESSFUL INSTALLATION '''
+    output.append(f'{timestamp}  Installation complete.')
+    # print(output)
+    return output
+
+
+def main(master: str, flags: str, timestamp: str):
+    i = 0
+    while i < len(master):
+        if not master.startswith("/") or master[i] == '.' or not master.startswith("/"):
+            sys.stderr.write("Invalid master directory.\n")
+        i += 1
+
+    # flag without dash
+    if not flags.startswith("-"):
+        sys.stderr.write("Invalid flag. Flag must start with '-'.\n")
+    # verify and install flag
+    elif flags.count('v') > 0 and flags.count('i') > 0:
+        sys.stderr.write("Invalid flag. Choose verify or install process not both.\n")
+    # only log flag
+    elif flags == '-l':
+        sys.stderr.write("Invalid flag. Log can only run with install or verify.\n")
+    # duplicated flags / unique character
+    elif flags == '-vv' or flags == '-ii' or flags == 'll':
+        sys.stderr.write("Invalid flag. Each character must be unique.\n")
+    elif flags == '-i' or flags == '-v' or \
+         flags == '-il' or flags == '-li' or \
+         flags == '-lv' or flags == '-vl':
+        pass
+    # invalid flag
+    else:
+        sys.stderr.write("Invalid flag. Character must be a combination of 'v' or 'i' and 'l'.\n")
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) < 2:
+        sys.stderr.write("Insufficient arguments.\n")
+        quit()
+
+    master = sys.argv[1]
+    if not os.path.exists(master):
+        sys.stderr.write("Invalid master directory.\n")
+        quit()
+    if len(sys.argv) < 3:
+        sys.stderr.write("Insufficient arguments.\n")
+        quit()
+
+    flags = sys.argv[2]
+    current_datetime = datetime.now().strftime("%d %b %Y %H:%M:%S")
+    date = datetime.now().strftime("%Y-%m-%d")
+    time = datetime.now().strftime("%H_%M_%S")
+
+    # USYD CODE CITATION ACKNOWLEDGEMENT
+    #
+    # I declare that the timestamp code was referenced from Programiz
+    #
+    # Original URL
+    # https://www.programiz.com/python-programming/datetime/strftime
+    # Last access 5 May, 2023
+
+    if flags == "-i":
+        installation(master, current_datetime)
+        # i_logs = i_output
+    elif flags == "-v":
+        verification(master, current_datetime)
+        # v_logs = v_output
+    elif flags == "-il" or flags == "li":
+        i_output = installation(master, current_datetime)
+        logging(i_output, date, time)
+    elif flags == "-vl" or flags == "lv":
+        v_output = verification(master, current_datetime)
+        logging(v_output, date, time)
+
+    main(master, flags, time)

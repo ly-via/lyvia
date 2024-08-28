@@ -1,0 +1,152 @@
+def intro():
+    print('Larry: I\'m Larry. I\'ll be your hunting instructor.')
+
+
+def travel_to_camp():
+    # print game conversation of travelling camp
+    print('Larry: Let\'s go to the Meadow to begin your training!')
+
+    # get user input
+    travel_enter = input('Press Enter to travel to the Meadow...')
+
+    # 'Enter' key is pressed
+    if travel_enter.strip() == '':
+        # print game conversation of reaching the camp
+        print('''Travelling to the Meadow...
+Larry: This is your camp. Here you'll set up your mouse trap.''')
+    else:
+        quit()
+
+
+# define a dictionary to hold the required trap
+trap_dict = {"value": None}
+
+
+# to return the current trap
+def get_trap():
+    if trap_dict["value"] is None:
+        trap_dict["value"] = 'Cardboard and Hook Trap'
+    else:
+        return trap_dict["value"]
+
+
+# set global variables for the traps
+left_trap = 'High Strain Steel Trap'
+right_trap = 'Hot Tub Trap'
+no_trap = 'Cardboard and Hook Trap'
+
+
+def setup_trap() -> tuple:
+    trap = ''
+    cheddar = []  # new lists to store cheddar
+
+    # print game conversation of getting first trap and setting it
+    print('Larry: Let\'s get your first trap...')
+
+    # get user input
+    view_trap_enter = input('Press Enter to view traps that Larry is holding...')
+
+    # 'Enter' key is pressed
+    if view_trap_enter.strip() == '':
+        print('Larry is holding...\nLeft: High Strain Steel Trap\nRight: Hot Tub Trap')
+    else:
+        quit()
+
+    # get user input for selecting trap
+    trap_chosen = input('Select a trap by typing "left" or "right": ').lower()
+
+    # valid selection of trap
+    # strip() - ignore leading & trailing whitespace
+    if trap_chosen.strip() == 'left' or trap_chosen.strip() == 'right':
+        print('''Larry: Excellent choice.''')
+
+        # print trap selected and set
+        if trap_chosen.strip() == 'left':
+            trap = 'High Strain Steel Trap'
+            print(f'Your "{trap}" is now set!')
+            # update the dictionary based on the left trap
+            trap_dict.update({"value": "High Strain Steel Trap"})
+
+        elif trap_chosen.strip() == 'right':
+            trap = 'Hot Tub Trap'
+            print(f'Your "{trap}" is now set!')
+            # update the dictionary based on the right trap
+            trap_dict.update({"value": "Hot Tub Trap"})
+
+        # add '1' into trap ls
+        cheddar.append(1)
+        print('Larry: You need cheese to attract a mouse.\nLarry places one cheddar on the trap!')
+
+    # no trap selected
+    else:
+        # update the dictionary based on no trap
+        trap_dict.update({"value": "Cardboard and Hook Trap"})
+        cheddar.append(0)  # add '0' into trap ls
+        print('Invalid command! No trap selected.\nLarry: Odds are slim with no trap!')
+    return trap, cheddar
+
+    # USYD CODE CITATION ACKNOWLEDGEMENT
+    #
+    # I declare that I did the reference for the concept of strip()
+    # anything else is my own work
+    #
+    # How To Remove Spaces from a String In Python | DigitalOcean.
+    # https://www.digitalocean.com/community/tutorials/python-remove-spaces-from-string
+
+
+def sound_horn() -> str:
+    print('Sound the horn to call for the mouse...')
+
+    # get user input
+    horn_input = input('Sound the horn by typing "yes": ').lower().strip()
+    return horn_input
+
+
+def basic_hunt(trap, cheddar: int, horn_input: str) -> bool:
+    # set default hunt_status
+    hunt_status = False
+
+    # has trap & cheese
+    case1 = ((trap == left_trap or trap == right_trap) and cheddar[0] == 1)
+
+    # has no either cheese or trap
+    case2 = (trap == left_trap or trap == right_trap or trap == no_trap) or \
+            (cheddar[0] == 1 or cheddar[0] == 0)
+
+    if horn_input == 'yes':
+        if case1:
+            # case 1.1 : 'yes' for horn > has both cheese on trap
+            hunt_status = True
+        elif case2:
+            # case 2.2 : 'yes' for horn > has either cheese or trap
+            print('Nothing happens.\nTo catch a mouse, you need both trap and cheese!')
+            hunt_status = False
+    else:
+        if case1:
+            # 'random' for horn > has both cheese on trap
+            print('Nothing happens.\nTo catch a mouse, you need both trap and cheese!')
+            hunt_status = False
+        else:
+            # case 2.1 : no 'yes' for horn > straight 'Ntg happens.'
+            print('Nothing happens.')
+            hunt_status = False
+    return hunt_status
+
+
+def end(hunt_status: bool):
+
+    if hunt_status is True:
+        print('Caught a Brown mouse!\nCongratulations. Ye have completed the training.\nGood luck~')
+
+
+def main():
+    intro()
+    travel_to_camp()
+    trap, cheddar = setup_trap()
+    horn_input = sound_horn()
+    hunt_status = basic_hunt(trap, cheddar, horn_input)
+    end(hunt_status)
+
+
+if __name__ == '__main__':
+    main()

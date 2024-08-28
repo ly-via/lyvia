@@ -1,0 +1,38 @@
+def is_valid_length(name: str) -> bool:
+    '''
+    Checks if name has length between 1 and 9 (inclusive)
+    '''
+    name_length = len(name)
+    if name_length >= 1 and name_length <= 9:
+        return True
+    else:
+        return False
+
+
+def is_valid_start(name: str) -> bool:
+    '''
+    Checks if name starts with an alphabet
+    '''
+    if name[0].isalpha() and name != ' ':
+        return True
+    else:
+        return False
+
+
+def is_one_word(name: str) -> bool:
+    '''
+    Checks if name is a single word
+    '''
+    seperate_name = name.strip().split(" ")
+    # more than a word & count() : check if str contain spaces
+    if len(seperate_name) == 1 and name.count(" ") == 0:
+        return True
+    else:
+        return False
+
+
+def is_valid_name(name: str) -> bool:
+    if is_valid_length(name) and is_one_word(name) and is_valid_start(name):
+        return True
+    else:
+        return False
