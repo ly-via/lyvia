@@ -35,9 +35,9 @@ The project involves designing a survey to collect data on a chosen topic, follo
 - Created a video presentation to effectively communicate the findings in a concise and persuasive manner.
 
 ### Tools and Technologies
-**R**: For data analysis, modeling, and visualization.
-**ggplot2**: For creating high-quality, informative graphics.
-**RMarkdown**: For compiling the written report with embedded code and outputs.
+- **R**: For data analysis, modeling, and visualization.
+- **ggplot2**: For creating high-quality, informative graphics.
+- **RMarkdown**: For compiling the written report with embedded code and outputs.
 
 ### Results
 The project demonstrates a complete end-to-end data science process, from data collection to analysis and reporting. The findings offer valuable insights that inform evidence-based decision-making, highlighting the power of data in answering complex research questions.
