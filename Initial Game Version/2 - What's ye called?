@@ -1,0 +1,39 @@
+# get user's name
+name = input("Larry: What's ye name, Hunter?\n")
+
+
+'''
+1st check: length between 1 to 9 characters
+'''
+# get length of name inputted
+name_length = len(name)
+is_valid_length = name_length >= 1 and name_length <= 9
+
+
+'''
+2nd check: starts with an alphabetical character & no empty str
+'''
+is_valid_start = name[0].isalpha() and not name.isspace()
+
+
+'''
+3rd check: single word & no spaces between characters
+'''
+# strip whitespaces characters before and after
+# split string into list to check if it's one word
+seperate_name = name.strip().split(" ")
+is_one_word = len(seperate_name) == 1 and name.count(" ") == 0
+
+
+'''
+final check: put all validations together
+'''
+is_valid_name = is_valid_length and is_valid_start and is_one_word
+
+
+# print output
+print(f'''Larry: Is '{name}' a name I can pronounce?
+It has a length of {name_length} which is between 1 to 9 characters? {is_valid_length}!
+It starts with an alphabet? {is_valid_start}
+It is a single word? {is_one_word}
+Larry: I can pronounce this name --- {is_valid_name}''')
