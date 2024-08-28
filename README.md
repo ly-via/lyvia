@@ -26,7 +26,7 @@ A data-driven project where I designed a survey, collected data, and analyzed it
 Each project in this repository represents a learning journey where I've applied theoretical knowledge to practical challenges. Whether it's building a complex data pipeline, designing a user-friendly game interface, or analyzing data to answer real-world questions, these projects are a reflection of my commitment to continuous growth and exploration in the field of technology.
 
 ## How to Navigate
-Feel free to explore each project's directory for detailed documentation, source code, and any relevant files. The README file within each project provides more context on the objectives, technologies used, and outcomes.
+Feel free to explore each project's directory **on different branches** for detailed documentation, source code, and any relevant files. The README file within each project provides more context on the objectives, technologies used, and outcomes.
 
 ## Let's Connect
 I'm always open to feedback, collaboration, and new opportunities. If something catches your eye or you have any questions, don't hesitate to reach out!
