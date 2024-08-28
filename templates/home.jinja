@@ -1,0 +1,431 @@
+{% extends 'base.jinja' %}
+
+{% block content %} 
+<style>
+    nav {
+        border-top: 1px solid black;
+        background-color: #efefef;        
+        border-top: none;
+        overflow: auto;
+        width: 100%;
+        bottom: 0;
+    }
+
+    body {
+        font-weight: bold;
+        background-color: #F6F5F3;
+    }
+
+    *{
+        font-family: 'Courier New', monospace;
+    }
+
+    .heading {
+        font-weight: bold;
+        color: #1b3a6a;
+    }
+
+    #message_box {
+        border: 1px solid black; 
+        overflow: auto;
+        height: 400px; 
+        width: 800px; 
+        padding: 2px;
+    }
+
+    #receiver {
+        height: 30px; 
+        width: 250px;
+        border-radius: 8px;
+        border-width: 1px;
+    }
+
+    #message {
+        height: 30px; 
+        width: 550px;
+        border-radius: 8px;
+        border-width: 1px;
+    }
+
+    .text {
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    .btn {
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .chat-button, .send-button {
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        background: #1b3a6a;
+    }
+
+    .leave-button {
+        color: #1b3a6a;
+        cursor: pointer;
+        font-weight: bold;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border-width: 0.1px;
+        background: #E68A8C;
+    }
+
+    .button:hover {
+        color: #1b3a6a;
+        background: #E68A8C;
+    }
+
+    .buttons:hover {
+        color: white;
+        background: #1b3a6a;
+    }
+
+    /* defined: <button class="home-button"> */
+    .home-button, .addfriend-button, .friendrequest-button, 
+    .friendlist-button, .logout-button, .repo-button {
+        float: left;
+        margin-top: 12px;
+        padding: 5px 10px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #dad8d8;
+    }
+
+    .home-button:hover, .addfriend-button:hover, .friendrequest-button:hover, 
+    .friendlist-button:hover, .logout-button:hover, .repo-button:hover {
+        background: #e7e7e7;
+    }
+
+    .bottom-nav {
+        border-top: 1px solid black;
+        background-color: #ededed;        
+        border-bottom: none;
+        position: fixed;
+        overflow: auto;
+        width: 100%;
+        bottom: 0;
+    }
+</style>
+
+<nav style="border-bottom: 1px solid black;">
+    <button class="btn home-button" onclick="to_homepage()">Home</button>
+    
+    {% if role == 'student' %}
+        <button class="btn addfriend-button" onclick="to_addfriend()">Add Friend</button>
+        <button class="btn friendrequest-button" onclick="to_friendrequest()">Friend Request</button>
+        <button class="btn friendlist-button" onclick="to_friendlist()">Friend List</button>
+        <button class="btn repo-button" onclick="to_repo()">Repository</button>
+    {% endif %}
+    
+    <button class="btn logout-button" onclick="to_logout()">Logout</button>
+    <ol style="float: right">
+        <li style="display:inline-block">{{ username }} / {{ role }} </li>
+    </ol>
+</nav>
+
+<h1 class="heading">Messaging App </h1>
+
+<main>
+    <section id="message_box"></section>
+
+    <section id="chat_box">
+        <p class="text">Chat with: </p>
+        <input id="receiver" placeholder="username">
+        <button class="button chat-button" onclick="join_room()">Chat</button>
+    </section>
+
+    <section id="input_box" style="display: none">
+        <p class="text">Message: </p>
+        <input id="message" placeholder="message">
+        <button class="button send-button" onclick="send()">Send</button>
+        <button class="buttons leave-button" onclick="leave()">Leave Room</button>
+    </section>
+
+    {% if is_muted == 'true' %}
+        <p style="color: red;">You are being muted, not allowed to join chat room!</p>
+    {% elif selected_friends %}
+        <p style="color: green;">You are in chat room with "{{ selected_friends }}"</p>
+    {# {% elif online_friend %}
+        <p style="color: green;">You are in chat room with "{{ online_friend }}"</p> #}
+    {% endif %}
+
+    {# if either receiver or online friend is None or empty ""
+    {% if not online_friend or not receiver %}
+        <p style="color: red;">Select a friend to chat with :)</p>
+    {% endif %} #}
+    
+</main>
+
+<nav class="bottom-nav"> 
+    <div id="notification-txt"><p>Notifications</p></div>
+</nav>
+
+<script src="/static/js/libs/socket.io.min.js"></script>
+<script>
+    let room_id = 0;
+
+    $("#message").on("keyup", (e) => {
+        if (e.key == "Enter") {
+            send();
+        }
+    })
+
+     $("#receiver").on("keyup", (e) => {
+        if (e.key == "Enter") {
+            join_room();
+        }
+    })
+
+    $(document).ready(() => {
+        // room_id is undefined if the user hasn't joined a room
+        // we early return in this case
+        if (Cookies.get("room_id") == undefined) {
+            return;
+        }
+
+        // muted user not allow to 'chat'
+        if (is_muted == 'true') {
+            $("#receiver").prop('disabled', true);
+            var chat_button = document.querySelector('.chat-button');
+            chat_button.setAttribute('disabled', '');
+        }
+
+        let receiver;
+
+        // -- get online friend and replace 'receiver' --
+        // let online_friend = "{{ online_friend }}";
+        // let offline_friend = "{{ offline_friend }}";
+
+        let selected_friends = "{{ selected_friends }}";
+
+        // if (online_friend && online_friend !== 'None' && online_friend !== '' || offline_friend && offline_friend !== 'None' && offline_friend !== '') {
+        if (selected_friends && selected_friends !== 'None' && selected_friends !== '') {
+            $("#receiver").val(selected_friends);
+            send(selected_friends);
+            join_room(selected_friends);
+
+            // the user has already joined an existing room
+            // display the message box, instead of the "Chat with: " box
+            $("#chat_box").hide();
+            $("#input_box").show();
+            room_id = parseInt(Cookies.get("room_id"));
+
+        // show the 'Chat with: ' input box
+        } else {
+            $("#chat_box").show();
+            receiver = $("#receiver").val();
+            send(receiver);
+            join_room(receiver);
+        }
+    })
+
+// -----------------------------------------------------------------------------------
+
+    // Here's the Socket IO part of the code
+    // things get a bit complicated here so brace yourselves :P
+    let username = "{{ username }}";
+    let user_id = "{{ user_id }}";
+    let is_muted = "{{ is_muted }}";
+    Cookies.set('username', username);
+
+    // initializes the socket
+    const socket = io();
+
+    // an incoming message arrives, we'll add the message to the message box
+    socket.on("incoming", (msg, color="black") => {
+        add_message(msg, color);
+    })
+
+    socket.on("notification", (msg, color="green") => {
+        add_notification(msg, color);
+    })
+
+    socket.on("update_notification", (msg, color="green") => {
+        NO_notification(msg, color);
+    })
+
+
+// -----------------------------------------------------------------------------------
+
+
+    // we'll send the message to the server by emitting a "send" event
+    function send() {
+        
+        let receiver;
+        let username = "{{ username }}";
+        let message = $("#message").val();
+        $("#message").val("");
+
+        // let online_friend = "{{ online_friend }}";
+        // let offline_friend = "{{ offline_friend }}";
+        // alert("-- online friend -- " + online_friend);
+
+        let selected_friends = "{{ selected_friends }}";
+
+        // join from FRIEND LIST
+        if (selected_friends && selected_friends !== 'None' && selected_friends !== '') {
+            receiver = selected_friends;
+            {# alert("SEND -- online friend -- " + online_friend); #}
+
+        // join from HOME >> enter friend username
+        } else {
+            receiver = $("#receiver").val();
+            {# alert("SEND -- receiver -- " + receiver); #}
+        }
+        socket.emit("send", username, receiver, message, room_id);  
+    }
+
+
+// -----------------------------------------------------------------------------------
+
+
+    let visited = false;
+    // we emit a join room event to the server to join a room
+    function join_room() {
+
+        let receiver;
+        // let online_friend = "{{ online_friend }}"; 
+        let selected_friends = "{{ selected_friends }}";
+
+        // join via table
+        if (selected_friends && selected_friends !== 'None' && selected_friends !== '') {
+            receiver = selected_friends;
+        
+        // join via friend list
+        } else {
+            receiver = $("#receiver").val();
+            {# alert("JOIN -- username -- " + username);
+            alert("JOIN -- receiver -- " + receiver); #}
+        }
+
+        {# let receiver = $("#receiver").val(); #}
+        // pass in the receiver of our message to the server
+        // as well as the current user's username
+        socket.emit("join", username, receiver, (res) => {
+            if (typeof res != "number") {
+                alert(res);
+                return;
+            }
+            // set the room id variable to the room id returned by the server
+            room_id = res;
+            Cookies.set("room_id", room_id);
+
+            let receiver;
+            let selected_friends = "{{ selected_friends }}";
+
+            // join from TABLE
+            if ((selected_friends && selected_friends !== 'None' && selected_friends !== '') && receiver !== "") {
+                receiver = selected_friends;
+
+                // now we'll show the input box, so the user can input their message
+                $("#chat_box").hide();
+                $("#input_box").show();
+                socket.emit("enter_chatroom", room_id, username, receiver);
+
+            // join from FRIEND LIST
+            } else {
+                receiver = $("#receiver").val();
+                socket.emit("enter_chatroom", room_id, username, receiver);
+            }
+
+            if (receiver) {
+                $("#chat_box").hide();
+                $("#input_box").show();
+
+            }
+        });
+
+        
+        if (!visited) {
+            socket.emit("notification", username, receiver, visited = true);  // show notification once they joined
+        }
+        {# socket.emit("notification", username, receiver); #}
+        socket.emit("update_notification", username, receiver); 
+    }
+
+
+// -----------------------------------------------------------------------------------
+
+
+    // function to add a message to the message box
+    // called when an incoming message has reached a client
+    function add_message(message, color) {
+        let box = $("#message_box");
+        let child = $(`<p style="color:${color}; margin: 0px;"></p>`).text(message);
+        box.append(child);
+    }
+
+
+// -----------------------------------------------------------------------------------
+
+
+    function add_notification(message, color) {
+        let box = $("#notification-txt");
+        let child = $(`<p style="color:${color}; margin:0;"></p>`).text(message);
+        box.append(child);
+    }
+
+    function NO_notification(message, color) {
+        let box = $("#notification-txt");
+        let child = $(`<p style="color:${color}; margin:0;"></p>`).text(message);
+        box.append(child);
+    }
+
+
+// -----------------------------------------------------------------------------------
+
+
+    // function when the user clicks on "Leave Room"
+    // emits a "leave" event, telling the server that we want to leave the room
+    function leave() {
+        Cookies.remove("room_id");
+        socket.emit("leave", username, room_id);
+        let receiver = "";
+        let selected_friends = "";
+        $("#input_box").hide();
+        $("#chat_box").show();
+    }
+
+
+// -----------------------------------------------------------------------------------
+
+
+    async function to_logout() {
+        let logoutURL = "{{ url_for('logout', username=username) }}";
+        window.location.href = logoutURL;
+    } 
+
+    async function to_homepage() {      // url - app.py function name
+        let homebuttonsURL = "{{ url_for('table', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = homebuttonsURL;
+    } 
+
+    async function to_addfriend() { 
+        let addfriendURL = "{{ url_for('add_friend', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = addfriendURL;
+    }  
+
+    async function to_friendrequest() {
+        let friendrequestURL = "{{ url_for('display_friendrequest', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = friendrequestURL;
+    }  
+
+    async function to_friendlist() {
+        let friendlistURL = "{{ url_for('display_friendlist', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = friendlistURL;
+    }  
+
+    async function to_repo() {
+        let repoURL = "{{ url_for('repo', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = repoURL;
+    } 
+</script>
+{% endblock %}

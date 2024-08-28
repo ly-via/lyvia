@@ -1,0 +1,156 @@
+<!-- 
+Sign up page, pretty much the same as login.
+-->
+{% extends 'base.jinja' %}
+
+
+{% block content %} 
+<style>
+    body {
+        background-color: #F6F5F3;
+    }
+
+    *{
+        font-family: 'Courier New', monospace;
+    }
+
+    .heading {
+        font-weight: bold;
+        color: #1b3a6a;
+    }
+
+    .text {
+        font-weight: bold;
+    }
+
+    .btn {
+        font-weight: bold;
+        cursor: pointer;
+        padding: 8px 22px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #dad8d8;
+    }
+
+    .signUp-btn {
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        padding: 8px 22px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        background: #1b3a6a;
+    }
+
+    .btn:hover {
+        background-color: #E68A8C;
+    }
+
+    .username, .password {
+        margin-top: 0px;
+        font-size: 14px;
+        color: #1b3a6a;
+        margin-bottom: 0px;
+    }
+
+    .username_top, .password_top {
+        margin-top: 15px;
+        color: #1b3a6a;
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 0px;
+    }
+
+    fieldset {
+        width: 450px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #1b3a6a;
+    }
+
+</style>
+
+    <h1 tabindex="0" class="heading">Student Sign Up</h1>
+    <p tabindex="0" class="text">New Username</p>
+    <input tabindex="0" id="username" placeholder="input username"/>
+    <br/>
+    <br/>
+    {# <p class="username_top">Username requirements:</p>
+    <p class="username">- At least 5 characters long</p>
+    <p class="username">- Only contain letters and numbers</p>
+    <p class="username">- Contain no special characters, spaces and symbols</p> #}
+    
+    <fieldset>
+        <legend class="username_top"> Set up username </legend>
+
+        <div tabindex="0" tabindex="0">
+            <p tabindex="0" class="username">- At least 5 characters long</p>
+            <p tabindex="0" class="username">- Only contain letters and numbers</p>
+            <p tabindex="0" class="username">- Contain no special characters, spaces and symbols</p>
+        </div>
+    </fieldset>
+
+    <br/>
+    <p tabindex="0" class="text">New Password</p>
+    <input tabindex="0" id="password" type="password" placeholder="input password"/>
+    <br/>
+    <br/>
+
+    <fieldset>
+        <legend class="password_top"> Set up password </legend>
+        <div tabindex="0">
+            <p tabindex="0" class="password">- Contain numbers and symbols</p>
+            <p tabindex="0" class="password">- Length between 8 and 20 characters</p>
+            <p tabindex="0" class="password">- Contain lowercase and uppercase letters</p>
+            <p tabindex="0" class="password">- At most 3 repeating and subsequent characters</p>
+        </div>
+    </fieldset>
+
+    {# <input type="hidden" id="role" name="role" value="student"> #}
+    <br/>
+    <button tabindex="0" class="btn signUp-btn" onclick="signup()">Sign up</button>
+    <button tabindex="0" class="btn" onclick="to_login()">go to Login</button>
+    <button tabindex="0" class="btn" onclick="to_staff_signup()">go to STAFF Sign Up</button>
+
+    <script>
+         function isValidURL(string) {
+            if (string.length == 0) {
+                return false;
+            }
+            if (string[0] == "/") {
+                return true;
+            }
+            return false;
+        }
+
+        // this function is identical to login(), see login.jinja
+        async function signup() {
+            let loginURL = "{{ url_for('signup_user') }}";
+            let res = await axios.post(loginURL, {
+                username: $("#username").val(),
+                password: $("#password").val(),
+                role: "student"  // set the role for student
+                // role: ""
+            });
+
+            if (!isValidURL(res.data)) {
+                alert(res.data);
+                return;
+            }
+            window.open(res.data, "_self")
+        }
+
+        async function to_staff_signup() {
+            let staffURL = "{{ url_for('staff_signup') }}";
+            window.location.href = staffURL;
+        }   
+
+        async function to_login() {
+            let loginURL = "{{ url_for('login') }}";
+            window.location.href = loginURL;
+        }
+
+    </script>
+{% endblock %}

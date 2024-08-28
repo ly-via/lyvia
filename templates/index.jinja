@@ -1,0 +1,91 @@
+<!-- 
+Index page, the "default" page when you visit "http://localhost/" 
+ without any URL parameters at the end
+ -->
+{% extends 'base.jinja' %}
+
+
+{% block content %} 
+
+<style>
+    nav {
+        border-bottom: 1px solid black;
+        overflow: auto
+    }
+
+    body {
+        background-color: #FFFAFA;
+        font-family: 'Courier New', monospace;
+    }
+
+    .heading {
+        font-weight: bold;
+        color: #1b3a6a;
+    }
+
+    .button {
+        float: left;
+        clear: left;
+        border: none;
+        outline: none;
+        color: #fff;
+        display: block;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        font-size: 18px;
+        padding: 15px 25px;
+        margin-bottom: 30px;
+        border-radius: 15px;
+        background-color: #1b3a6a;
+        /* background-color: #4A9D93; */
+        box-shadow: 0 9px #bfbfbf;
+        font-family: 'Courier New', monospace;
+    }
+
+    .button:hover {
+        background-color: #E68A8C;
+    }
+
+    .button:active {
+        background-color: #E68A8C;
+        box-shadow: 0 5px #666;
+        transform: translateY(4px);
+    }
+
+    .signUp-button, .login-button {
+        margin-left: 20px;
+        margin-top: 20px;
+        width: 50%;
+    }
+</style>
+
+<main>
+    <h1 class="heading">Hello! Welcome to the site!</h1>
+
+    <button tabindex="0" class="button signUp-button" onclick="to_signUp()">Sign Up</button>
+    <button tabindex="0" class="button login-button" onclick="to_login()">Login</button>
+
+    {# <p><a href={{ url_for('student_staff_signup') }}> Sign Up</a></p>
+    <p><a href={{ url_for('login') }}> Login</a></p> #}
+</main>   
+
+
+<script>
+    function isValidURL(string) {
+        if (string.length == 0) {  return false;  }
+        if (string[0] == "/") {  return true;  }
+        return false;
+    }
+
+    async function to_signUp() {
+        let signUpURL = "{{ url_for('student_staff_signup') }}";
+        window.location.href = signUpURL;
+    } 
+
+    async function to_login() {
+        let loginURL = "{{ url_for('login') }}";
+        window.location.href = loginURL;
+    }
+</script>
+{% endblock %}

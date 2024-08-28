@@ -1,0 +1,229 @@
+<!-- 
+Display friend request page
+-->
+{% extends 'base.jinja' %}
+
+
+{% block content %} 
+<style>
+    nav {
+        border-bottom: 1px solid black;
+        overflow: auto;
+    }
+
+    body {
+        font-weight: bold;
+        background-color: #F6F5F3;
+    }
+
+    *{
+        font-family: 'Courier New', monospace;
+    }
+
+    .heading {
+        font-weight: bold;
+        color: #1b3a6a;
+    }
+
+    .user_role {
+        font-weight: bold;
+    }
+
+    .text {
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    .btn {
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .home-button, .logout-button {
+        float: left;
+        margin-top: 12px;
+        padding: 5px 10px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #dad8d8;
+    }
+
+    .home-button:hover, .logout-button:hover {
+        background: #e7e7e7;
+    }
+
+    .tab-container {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+
+    .tab {
+        cursor: pointer;
+        font-weight: bold;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        display: inline-block;
+        border-color: #CFE1F4;
+        border: 0.5px solid #bfd6ee;
+    }
+
+    .active {
+        background-color: #CFE1F4;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    #received-content button {
+        margin-top: 20px;
+        padding: 7px 15px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #dad8d8;
+    }
+
+    .button {
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        padding: 8px 18px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        background: #1b3a6a;
+    }
+
+    .button:hover {
+        background: #E68A8C;
+    }
+
+</style>
+
+
+<!--Navbar-->
+<nav style="border-bottom: 1px solid black;">
+    <button class="btn home-button" onclick="to_homepage()">Home</button>
+    <button class="btn logout-button" onclick="to_logout()">Logout</button>
+    <ol style="float: right">
+        <li class="user_role" style="display:inline-block">{{ username }} / {{ role }} </li>
+    </ol>
+</nav>
+
+<h1 class="heading">Friends Request</h1>
+
+    <!-- Tabs for "Sent", and "Received" -->
+    <div lang="en-GB" tabindex="0" class="tab-container">
+        <div lang="en-GB" tabindex="0" class="tab" id="sent-tab" onclick="openTab('sent')">Sent Request</div>
+        <div lang="en-GB" tabindex="0" class="tab" id="received-tab" onclick="openTab('received')">Received Request</div>
+    </div>
+
+    <!-- Content for the tabs -->
+    <div lang="en-GB" tabindex="0" id="sent-content" class="tab-content">
+        {% if not senders %}
+            <p>Nothing to show here :)</p>
+        {% endif %}
+
+        <ul>
+            {# senders parsed from app.py update_friend_request return #}
+            {% for sender, role in senders %}
+                <li tabindex="0">{{ sender }} - {{ role }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div lang="en-GB" tabindex="0" id="received-content" class="tab-content">
+        <form id="request-checkbox-form" action="/update_friend_request" method="post">
+            <input type="hidden" id="action" name="action" value="">
+            <input type="hidden" id="username" name="username" value="{{ username }}">
+            
+            {% if not friends %}
+                <p>Nothing to show here :)</p>
+            {% endif %}
+
+            {# friends parsed from app.py update_friend_request return #}
+            {% for friend, role in friends %}
+                <input type="checkbox" id="{{ friend }}" name="friends" value="{{ friend }}">
+                <label for="{{ friend }}">{{ friend }} - {{ role }}</label><br>
+            {% endfor %}
+            <button class="button approve-button" onclick="approve_request()">Approve</button>
+            <button class="button reject-button" onclick="reject_request()">Reject</button>
+        </form>
+        {# show messages #}
+        {% if message %}
+            <p lang="en-GB" tabindex="0" style="color: green;">{{ message }}</p>
+        {% endif %}
+        {# {% if error_message %}
+            <p lang="en-GB" tabindex="0" style="color: red;">{{ error_message }}</p>
+        {% endif %} #}
+    </div>
+
+    <script>
+        function isValidURL(string) {
+            if (string.length == 0) {
+                return false;
+            }
+            if (string[0] == "/") {
+                return true;
+            }
+            return false;
+        }
+
+        async function to_homepage() {
+            let username = "{{ username }}";
+            let user_id = "{{ user_id }}";
+            let role = "{{ role }}";
+            let is_muted = "{{ is_muted }}";
+            
+            let homebuttonsURL = "{{ url_for('table', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+            window.location.href = homebuttonsURL;
+        }
+
+        async function to_logout() {
+            let logoutURL = "{{ url_for('logout', username=username) }}";
+            window.location.href = logoutURL;
+        } 
+
+        function openTab(tabName) {
+            // hide tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // show tab contents & set the tab as "active"
+            document.getElementById(tabName + '-content').classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        function approve_request() {
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkboxes.length > 0) {
+                document.getElementById("action").value = "approve";
+                document.getElementById("username").value = "{{ username }}";
+                document.getElementById("request-checkbox-form").submit();
+            } else {
+                alert("Error: Select at least one friend to approve.");
+            }
+        }
+
+        function reject_request() {
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+            if (checkboxes.length > 0) {
+                document.getElementById("action").value = "reject";
+                document.getElementById("username").value = "{{ username }}";
+                document.getElementById("request-checkbox-form").submit();
+            } else {
+                alert("Error: Select at least one friend to reject.");
+            }
+        }
+    </script>
+{% endblock %}
