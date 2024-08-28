@@ -10,16 +10,16 @@ This repository is a curated collection of my work, featuring projects that high
 - **Game Development**: Games created in Java and other platforms, illustrating my skills in game mechanics, graphics, and user interface design.
 
 ## Featured Projects
-### 1. Greater Sydney Analysis:
+#### 1. Greater Sydney Analysis:
 A data science project focused on spatially integrating datasets to quantify the "bustling" nature of different regions within Greater Sydney.
 
-### 2. Java OOP Game:
+#### 2. Java OOP Game:
 A tower defense game built in Java using the Processing library, demonstrating my understanding of object-oriented programming, game development, and user interface design.
 
-### 3. Mousehunt Text-Based Game (Python):
+#### 3. Mousehunt Text-Based Game (Python):
 A text-based version of the popular Mousehunt game, showcasing my skills in Python, object-oriented design, and creating engaging user experiences.
 
-### 4. Survey Design and Data Analysis (R):
+#### 4. Survey Design and Data Analysis (R):
 A data-driven project where I designed a survey, collected data, and analyzed it using R, with a focus on visualization and statistical modeling.
 
 ## Why These Projects?
