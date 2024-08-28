@@ -1,24 +1,44 @@
-# Greater Sydney Analysis
-This project focuses on analyzing the 350+ Statistical Area Level 2 (SA2) regions within the Greater Sydney area to develop a "bustling" metric. This metric quantifies how busy each district is, considering Sydney's unique blend of urban life and natural beauty.
+# Survey Design and Data Analysis: A Comprehensive Data Science Project
+This project showcases a complete data science workflow, from designing a survey and collecting data to performing detailed analysis using R, and presenting findings in both written and video formats. The project aims to investigate a specific research question through survey data, employing various statistical methods and visualization techniques to draw meaningful conclusions.
 
 ## Project Overview
-Australia is divided into over 2000 SA2 regions, each representing communities that interact socially and economically. For this analysis, the focus is on the Greater Sydney area, known for its combination of bustling city life and proximity to natural attractions like beaches and national parks.
+The project involves designing a survey to collect data on a chosen topic, followed by a comprehensive analysis using numerical and graphical summaries. The investigation includes the application of appropriate statistical models and demonstrates proficiency in the R programming language, particularly with the ggplot2 package for data visualization. The results are then communicated through a detailed written report and a concise video presentation.
 
 ## Objectives
-- **Data Integration**: Spatially integrate multiple datasets of various formats to evaluate the activity levels across different regions.
-- **Metric Development**: Develop a "bustling" metric to quantify the busyness of each SA2 region within Greater Sydney.
-- **Data Processing**: Clean and preprocess data using Python, followed by SQL for merging datasets and generating the final scores.
 
-## Approach
-- **Data Loading and Cleaning**: Python was used to load and clean the initial datasets. This involved handling various data formats and ensuring consistency across the datasets.
-- **Spatial Integration**: Utilizing PostGIS, the spatial extension of PostgreSQL, to integrate spatial data, including SA2 digital boundaries obtained from the ABS website.
-- **Scoring**: SQL queries were employed to merge the datasets and calculate the bustling metric for each SA2 region, which was then visualized to highlight the busiest areas within Greater Sydney.
+### Survey Design:
+- Choose a research question and design a survey with around 10 well-structured questions, including at least two quantitative variables.
+- Collect data through the survey, ensuring a diverse and representative sample.
 
-## Tools and Technologies
-- **Python**: For data cleaning and preprocessing.
-- **PostgreSQL with PostGIS**: For managing spatial data and calculating metrics.
-- **Jupyter Notebook**: To collate and present the analysis in a clear, concise format.
+### Data Analysis:
+- Analyze the collected data using RStudio, focusing on numerical and graphical summaries.
+- Utilize ggplot2 for creating insightful visualizations that support the findings.
+- Apply appropriate statistical models, such as regression analysis, to explore relationships between variables.
 
-## Results
-The project successfully quantified the bustling nature of each SA2 region, offering insights into how activity levels vary across Greater Sydney. These results can be utilized for urban planning, resource allocation, and further research into the dynamics of city life in Sydney.
+### Reporting and Presentation:
+- Prepare a written report tailored to a hypothetical client, providing concrete recommendations backed by evidence from the data.
+- Produce a one-minute video presentation summarizing the key findings and recommendations.
+
+### Approach
+
+1. Survey Design and Data Collection:
+- Developed survey questions that align with the research question and ensure data collection on relevant variables.
+- Deployed the survey online and collected responses over a specified period.
+
+2. Data Analysis in R:
+- Conducted data cleaning and preparation to ensure quality analysis.
+- Used ggplot2 to create visual representations of the data, highlighting key trends and insights.
+- Applied statistical models to investigate the relationships between variables and answer the research question.
+
+3. Reporting and Communication:
+- Drafted a report in a format suitable for a client, summarizing the analysis and providing actionable recommendations.
+- Created a video presentation to effectively communicate the findings in a concise and persuasive manner.
+
+### Tools and Technologies
+**R**: For data analysis, modeling, and visualization.
+**ggplot2**: For creating high-quality, informative graphics.
+**RMarkdown**: For compiling the written report with embedded code and outputs.
+
+### Results
+The project demonstrates a complete end-to-end data science process, from data collection to analysis and reporting. The findings offer valuable insights that inform evidence-based decision-making, highlighting the power of data in answering complex research questions.
 
