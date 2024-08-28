@@ -5,7 +5,7 @@ This project focuses on analyzing the 350+ Statistical Area Level 2 (SA2) region
 Australia is divided into over 2000 SA2 regions, each representing communities that interact socially and economically. For this analysis, the focus is on the Greater Sydney area, known for its combination of bustling city life and proximity to natural attractions like beaches and national parks.
 
 # Objectives
-## Data Integration: Spatially integrate multiple datasets of various formats to evaluate the activity levels across different regions.
+- Data Integration: Spatially integrate multiple datasets of various formats to evaluate the activity levels across different regions.
 ## Metric Development: Develop a "bustling" metric to quantify the busyness of each SA2 region within Greater Sydney.
 ## Data Processing: Clean and preprocess data using Python, followed by SQL for merging datasets and generating the final scores.
 
