@@ -1,0 +1,298 @@
+---
+title: "Good Books for Ampersand Cafe & Bookstore"
+author: "520326356"
+subtitle: "Project 3"
+date: "University of Sydney | DATA1001 | October 2022"
+output:
+  html_document:
+    fig_caption: yes
+    self_contained: yes
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    theme: flatl
+    highlight: textmate
+---
+
+# Client Bio and Recommendation
+> **Client Name:** Ampersand Café & Bookstore
+> 
+> **Client Bio:** Ampersand Café & Bookstore is Sydney's best-loved cafe and bookstore serving both exceptional victuals and an extensive selection of books. See more on [Company Website](http://cafebookshop.com.au/),  [Instagram](https://www.instagram.com/ampersandcafe/), [Online Book Store](https://www.abebooks.com/).
+>
+> **Research Questions:** "What Makes Your Café Stand Out?"
+> 
+> **Recommendation:** The report recommends enlivening the cafe by offering the highest rated books, thereby attracting consumers to stay longer and increasing the cafe's sales. 
+
+```{r Packages Loading, message = F, warning = F}
+
+# Load packages
+library(readxl)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(kableExtra)
+library(DT)
+library("cowplot")
+```
+
+
+# Evidence 
+
+```{r Dataset Importing, message = F, warning = F}
+
+# import xlsx dataset
+books <- read_excel("books.xlsx")
+```
+
+### Initial Data Analysis (IDA) {.tabset}
+
+##### **Data Source**
+Dataset was retrieved from Kaggle [Goodreads-books](https://www.kaggle.com/datasets/jealousleopard/goodreadsbooks?resource=download).
+
+##### **Data Cleaning**
+Several variables were removed from dataset since no useful insight provided, including *bookID*, *isbn*, *publication_date.* See [Original Dataset](https://www.kaggle.com/datasets/jealousleopard/goodreadsbooks?resource=download) for more. 
+
+##### **Dataset Structure**
+9 variables from dataset were examined and are listed as below.
+
+```{r Data Structures Table, message = F, warning = F}
+
+# create date frame which explains variables & data structures
+books_df <- data.frame(
+  Variables = c("Title","Authors","Average Rating", "ISBN13", 
+                "Language Code", "Ratings Count", 
+                "Text Reviews Count","Publisher"
+                ),
+  Description = c(
+    "Title of the book. ",
+    "Name of author. ", 
+    "Overall average rating of the book. ",
+    "13-digit ISBN identification of the book. ",
+    "Primary language of the book. ",
+    "Total number of ratings received by the book. ",
+    "Total number of written text reviews received by the book. ", 
+    "Name of publisher. "
+    ),
+  Format = c("Text", "Text", "Numeric", "Alphanumeric", 
+             "Text", "Numeric", "Numeric", "Text"))
+
+# table formatting
+kbl(books_df, caption = "Table 1: Details of Variables") %>%
+  kable_styling(bootstrap_options = c("striped", "hover")) %>%
+  column_spec(1, bold = T, border_right = T)
+```
+
+##### **Limitations**
+
+Limited variables are available for drawing insight as lack of reliable data, which this report relied on inadequate key variables for analysis. Quality of data are poor since irrelevant data existed in some of the dataset’s columns causing poor decisions
+
+<br>
+
+# Statistical Analysis {.tabset}
+
+## Average Rating
+
+Recognizing the best-rated books is focused with average_rating. Books rating at maximum of 5 are selected from range of 0 to 5. Details of the selected books are listed in Table 2.
+
+```{r Average Rating, message = F, warning = F}
+
+# filter books for highest average_rating
+Top_Ratings <- filter(books, average_rating == 5)
+
+# create table with selected variables
+datatable(caption = "Table 2: Details of Top Highest Rated Books", Top_Ratings %>% 
+            select(title, authors, average_rating, isbn13, language_code, num_pages, 
+                   ratings_count, text_reviews_count, publisher)) 
+```
+
+The table shows the top 22 most-rated books. The overall average rating is essential as ratings make a book more widely known, which boosts sales. Moreover, it gives the book greater authority. This can be an important consideration as more consumers can be attracted to the cafe not simply for the cuisine, but for the top-rated books. 
+
+<br>
+
+## Language Code
+
+Primary language is signification too. Referring to Table 2, it is clear that majority of books has a primary language of English. Hence, relationship between average_rating and  language_code was studied.
+
+```{r Language Code, message = F, warning = F}
+# select average_rating and language_code column from books
+Ratings = books$average_rating
+Language = books$language_code
+
+# group ratings 
+FLTRA <- 0 <= Ratings & Ratings <1
+FLTRB <- 1 <= Ratings & Ratings <2
+FLTRC <- 2 <= Ratings & Ratings <3
+FLTRD <- 3 <= Ratings & Ratings <4
+FLTRE <- 4 <= Ratings & Ratings <=5
+
+# create a vector which translates ratings into categorical values.
+Ratings_Classification <- NULL
+Ratings_Classification[FLTRA] <- "0-1"
+Ratings_Classification[FLTRB] <- "1-2"
+Ratings_Classification[FLTRC] <- "2-3"
+Ratings_Classification[FLTRD] <- "3-4"
+Ratings_Classification[FLTRE] <- "4-5"
+
+# stacked proportion bar-plot
+df <- data.frame(Ratings, Ratings_Classification, Language)
+
+df %>% 
+  # filter out 'NA' values
+  filter(!is.na(Ratings_Classification)) %>% 
+  ggplot() + 
+  geom_bar(mapping = aes(x = Language, 
+                         fill = Ratings_Classification), 
+           position = "stack", 
+           width = 0.8) + 
+  labs(y = "Proportion", 
+       x = "Languages", 
+       title = "Figure 1: Proportion of Average Ratings by Languages") +
+  # color theme for the graph
+  scale_fill_brewer() + 
+  # customize x-axis
+  theme(axis.text.x = element_text(angle = 50))
+
+```
+<br>
+The graph represents American English has the highest proportion of average rating, following by British English. As such, the study was extended to the proportion of average rating by UK and US English.
+
+
+```{r Language Code_Eng, message = F, warning = F}
+# filter books for "en-US" and "en-GB"
+Filtered_Language <- filter(books, language_code == "en-US" | language_code == "en-GB")
+
+Ratings = Filtered_Language$average_rating
+Language = Filtered_Language$language_code
+
+# group ratings 
+FLTRA <- 0 <= Ratings & Ratings <1
+FLTRB <- 1 <= Ratings & Ratings <2
+FLTRC <- 2 <= Ratings & Ratings <3
+FLTRD <- 3 <= Ratings & Ratings <4
+FLTRE <- 4 <= Ratings & Ratings <=5
+
+# create a vector which translates ratings into categorical values.
+Ratings_Classification <- NULL
+Ratings_Classification[FLTRA] <- "0-1"
+Ratings_Classification[FLTRB] <- "1-2"
+Ratings_Classification[FLTRC] <- "2-3"
+Ratings_Classification[FLTRD] <- "3-4"
+Ratings_Classification[FLTRE] <- "4-5"
+ 
+# dodged proportion bar-plot
+df <- data.frame(Ratings, Ratings_Classification, Filtered_Language)
+
+ggplot(Filtered_Language, aes(x = language_code, 
+                              fill = Ratings_Classification)) + 
+  geom_bar(position = "dodge") + 
+  labs(y = "Proportion", 
+       x = "British vs American English", 
+       title = "Figure 2: Proportion of Average Ratings by UK and US English") + 
+  # data label
+  geom_text(aes(label = ..count..), 
+            stat = "count", 
+            position = position_dodge(width=0.9), 
+            vjust = -0.25) +
+  scale_fill_brewer()
+```
+<br>
+As seen above, books with both British or American English are more common among the consumers, according to the rating categories between 3-4 and 4-5. 
+
+> English language is the most preferred primary language.
+
+<br>
+
+## Text Review Count
+Number of text reviews is another essential consideration. To investigate how closely text_review_count are related to average_rating, this can be done by determining the strength of the relationship between both variables. 
+
+```{r Text Review Count, message = F, warning = F}
+# sort books by top 100 text reviews count
+Sorted_Books = books %>% 
+  arrange(desc(text_reviews_count)) %>% 
+  head(100)
+
+Ratings = Sorted_Books$average_rating
+Text_Review = Sorted_Books$text_reviews_count
+
+# ggplot with Regression Line
+# ggplot with Regression Line
+ggplot(Sorted_Books, aes(x = Ratings, y = Text_Review)) + 
+  geom_point(color = "Navy",
+             size = 2, 
+             alpha = .7) + 
+  geom_smooth() +
+  labs(y = "Text Review Count", 
+       x = "Average Rating", 
+       title = "Figure 3: Average Rating by " , 
+       subtitle = "Top 100 Text Reviewed Books")
+```
+
+The plot show visually that the majority of text_review_count focused among average rating of 4.
+
+> The more text reviews a book received, the higher average rating the book will be.
+
+
+## Number of Pages Count
+Number of pages count may somehow affects a book’s rating and consequently affect consumers’ buying behaviors. The relationship between num_pages and average_rating was recorded in Figure 4.
+
+```{r Page Number Count, message = F, warning = F}
+
+# sort books by top 100 text reviews count
+Sorted_Books = books %>% 
+  arrange(desc(num_pages)) %>% 
+  head(100)
+
+Ratings = Sorted_Books$average_rating
+Num_Pages = Sorted_Books$num_pages
+
+# ggplot with Regression Line
+ggplot(Sorted_Books, aes(x = Ratings, y = Num_Pages)) + 
+  geom_point(color = "Navy",
+             size = 2, 
+             alpha = .7) + 
+  geom_smooth() +
+  labs(y = "Number Pages Count", 
+       x = "Average Rating", 
+       title = "Figure 4: Average Rating by",
+       subtitle = "Top 100 Number Pages")
+```
+
+Similarly, a greater proportion of num_pages focused among average_rating of 4.
+
+<br>
+
+#  Acknowledgments
+
+## Articles
+According to studies, ratings and reviews are a crucial source of information for consumers considering they are the most reliable when people are looking for details about a product, in which ratings assists in consumers' decision-making process (Chen et al., 2022). As such, (Yucesoy et al., 2018) suggested that the higher the ratings and the more reviews a book received, the longer the book stays on the list. Essentially,  reviews help enhance brand loyalty while also strengthening the business by improving the brand's credibility, which boosts sales and profits.
+
+
+## References
+Yucesoy, B., Wang, X., Huang, J., & Barabási, A.-L. (2018). Success in books: a big data approach to bestsellers. EPJ Data Science, 7(1). 
+Retrieved from https://doi.org/10.1140/epjds/s13688-018-0135-y
+
+Chen, T., Samaranayake, P., Cen, X., Qi, M., & Lan, Y.-C. (2022). The Impact of Online Reviews on Consumers’ Purchasing Decisions: Evidence From an Eye-Tracking Study. Frontiers in Psychology, 13. 
+Retrieved from https://doi.org/10.3389/fpsyg.2022.865702
+
+<br>
+
+#  Appendix
+
+## Client
+With limited reliable data in the dataset *(average_rating, language_code, text_review_count)*, idea of how ratings and reviews affect consumers' decisions was developed. This prompted a collaboration idea between a bookstore and a cafe.
+
+## Statistical Analysis
+Graphic summaries were emphasized since they improve data presentation and comprehension, aiding the client in providing clearer, simpler summary of large amount of data with better analysis. Graphs with regression line are plotted to determine relationships’ strengths between the selected variables.
+
+```{r, message = F, warning = F}
+cor(books$average_rating, books$text_reviews_count , use = "complete.obs")
+```
+
+While there is a weak correlation between average_rating and num_pages, this indicates these two variables are closely related.
+
+```{r, message = F, warning = F}
+cor(books$average_rating, books$num_pages , use = "complete.obs")
+```
+
+text_review_count however, has a lower correlation indicating more weaker linear relationship.
