@@ -1,0 +1,142 @@
+<!-- 
+Display friend list page
+-->
+{% extends 'base.jinja' %}
+
+
+{% block content %} 
+   <style>
+    nav {
+        border-bottom: 1px solid black;
+        overflow: auto
+    }
+    
+    body {
+        font-weight: bold;
+        background-color: #F6F5F3;
+    }
+
+    *{
+        font-family: 'Courier New', monospace;
+    }
+
+    .heading {
+        font-weight: bold;
+        color: #1b3a6a;
+    }
+
+    .text  {
+        margin-top: 2px;
+        margin-bottom: 2px;
+    }
+
+    .btn {
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    /* defined: <button class="home-button"> */
+    .home-button, .logout-button {
+        float: left;
+        margin-top: 12px;
+        padding: 5px 10px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        border-color: #dad8d8;
+    }
+
+    .home-button:hover, .logout-button:hover {
+        background: #e7e7e7;
+    }
+
+    .button {
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        padding: 4px 20px;
+        margin-right: 10px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        background: #1b3a6a;
+    }
+
+    .button:hover {
+        background: #E68A8C;
+    }
+
+</style>
+
+{# 
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head> #}
+
+<!--Navbar, show username logged in & button to Homepage-->
+<nav style="border-bottom: 1px solid black;">
+    <button class="btn home-button" onclick="to_homepage()">Home</button>
+    <button class="btn logout-button" onclick="to_logout()">Logout</button>
+    <ol style="float: right">
+        <li style="display:inline-block">{{ username }} / {{ role }} </li>
+    </ol>
+</nav>
+
+<h1 class="heading">Add Friend</h1>
+
+<main>
+    <section id="addfriend_box">
+        <p class="text">Search username: </p>
+        <form action="{{ url_for('add_friend', username=username, user_id=user_id, role=role, is_muted=is_muted) }}" method="POST">
+            <input id="receiver" name="receiver" placeholder="username">
+            <button class="button" type="submit">Add</button>
+        </form>
+        {% if error_message %}
+            <p style="color: red;">{{ error_message }}</p>
+        {% endif %}
+
+        {% if msg %}
+            <p style="color: green;">{{ msg }}</p>
+        {% endif %}
+    </section>
+</main>
+
+<script src="/static/js/libs/socket.io.min.js"></script>
+<script>
+    let username = "{{ username }}";
+    let user_id = "{{ user_id }}";
+    let role = "{{ role }}";
+    let is_muted = "{{ is_muted }}";
+
+     $("#receiver").on("keyup", (e) => {
+        if (e.key == "Enter") {
+            to_addfriend();
+        }
+    })
+
+    function isValidURL(string) {
+        if (string.length == 0) {
+            return false;
+        }
+        if (string[0] == "/") {
+            return true;
+        }
+        return false;
+    }
+
+    async function to_addfriend() {
+        let receiver = $("#receiver").val();
+        let addfriendURL = "{{ url_for('add_friend', username=username, user_id=user_id, receiver=receiver, role=role, is_muted=is_muted) }}";
+        window.location.href = addfriendURL;
+    }
+
+    async function to_logout() {
+        let logoutURL = "{{ url_for('logout', username=username) }}";
+        window.location.href = logoutURL;
+    } 
+
+    async function to_homepage() {
+        let homebuttonsURL = "{{ url_for('table', username=username, user_id=user_id, role=role, is_muted=is_muted) }}";
+        window.location.href = homebuttonsURL;
+    }   
+</script>
+{% endblock %}
