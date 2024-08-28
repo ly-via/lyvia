@@ -1,4 +1,4 @@
-# Secure end to end chat messaging tool
+# Secure End to End Chat Messaging Tool
 This project is about a multi-million chat application. The main technology driving this application is `socket.io` which allows two way communication between the client side and server side through so called "socket events". 
 
 # Setup
