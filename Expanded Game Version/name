@@ -1,0 +1,238 @@
+import os
+
+
+def is_valid_length(name: str) -> bool:
+    name_length = len(name)
+    if name_length >= 1 and name_length <= 9:
+        return True
+    else:
+        return False
+
+
+def is_valid_start(name: str) -> bool:
+    if name[0].isalpha() and name != ' ':
+        return True
+    else:
+        return False
+
+
+def is_one_word(name: str) -> bool:
+    seperate_name = name.strip().split(" ")
+    # more than a word & count() : check if str contain spaces
+    if len(seperate_name) == 1 and name.count(" ") == 0:
+        return True
+    else:
+        return False
+
+
+def is_valid_name(name: str) -> bool:
+    result = is_profanity(name)
+    if result is False:
+        if is_valid_length(name) and \
+           is_one_word(name) and \
+           is_valid_start(name):
+            return True
+        else:
+            return False
+
+
+# check crude words
+def is_profanity(word: str, \
+                 database='/home/files/list.txt', \
+                 records='/home/files/history.txt') -> bool:
+    ''' 5.1. Is it profanity? '''
+    result = False  # False by default
+
+    try:  # check database directory
+        f_database = open(database, "r")
+        f_database.close()
+    except FileNotFoundError:
+        print("Check directory of database!")
+        return result
+
+    f_db = open(database, "r")    # read database
+    f_rec = open(records, "a")    # write to records
+    read_file = f_db.readlines()  # read entire file into ls
+    f_db.close()
+
+    i = 0  # loop thru db list
+    while i < len(read_file):
+        found_cruel_words = read_file[i].strip()  # read line after line, no \n
+        if word == found_cruel_words:      # crude word found, write to records
+            result = True
+            f_rec.write(found_cruel_words + '\n')
+        i += 1
+    f_rec.close()
+
+    ''' 5.2. Offense History '''
+    try:  # check records directory
+        f_rec = open(records, "a")  # write to records
+    except FileNotFoundError:
+        f_rec = open(records, "w")  # create new file if not exists
+        f_rec.write(word + '\n')
+        f_rec.close()
+
+    f_rec = open(records, "r")        # read records
+    read_records = f_rec.readlines()  # read entire file into ls
+
+    if len(read_records) == 0:        # check empty file
+        f_rec = open(records, "a")    # append new word into the existed file
+        f_rec.write(word + '\n')
+        f_rec.close()
+
+    # if existed history.txt is not empty, check previous_off
+    i = 0   # loop thru rec list
+    while i < len(read_records):
+        previous_off = read_records[i].strip()    # read line after line, no \n
+        if word == previous_off:       # previous_off found, return true result
+            result = True              # true for word found in records
+        i += 1
+    f_rec.close()
+    return result
+
+
+def count_occurrence(word: str, \
+                     file_records="/home/files/history.txt", \
+                     start_flag=True) -> int:
+    count = 0
+
+    try:  # check file_records
+        f = open(file_records, "r")
+        f.close()
+    except FileNotFoundError:
+        print('File records not found!')
+        return 0
+
+    if not isinstance(word, str):      # check str type
+        print('First argument must be a string object!')
+        return 0
+    elif word == '':  # check empty string
+        print('Must have at least one character in the string!')
+        return 0
+
+    # read file_records
+    f_file = open(file_records, "r")
+    read_file_records = f_file.read()
+    f_file.close()
+
+    # # to get entire word for each line in txt file # #
+    # readlines() -> strip() extract the list
+    # read() -> split() remove '\n', put into list
+
+    if start_flag is False:  # count entire word
+        found_words = read_file_records.lower().split()
+        count = read_file_records.lower().count(word)
+
+    else:  # counts same 1st alphabet
+        first_alpha = word[0].lower()
+        found_words = read_file_records.lower().split()
+
+        i = 0
+        while i < len(found_words):
+            # match 1st alpha for both 'word' & 'texts in txt file'
+            if found_words[i][0] == first_alpha:
+                count += 1
+            i += 1
+        if count == 0:
+            return 0
+    return count
+
+
+def generate_name(word: str, \
+                  src="/home/files/animals.txt", \
+                  past="/home/files/names.txt") -> str:
+
+    if not isinstance(word, str):
+        print('First argument must be a string object!')
+        return 'Bob'
+    elif word == '':
+        print('Must have at least one character in the string!')
+        return 'Bob'
+    else:
+        first_alpha = word[0].lower()
+
+    try:
+        with open(past, "r") as f:
+            read_name = f.read().splitlines()
+    except FileNotFoundError:
+        with open(past, "w") as f:
+            pass
+
+    try:
+        with open(src, "r") as f:
+            animals_ls = f.read().splitlines()
+    except FileNotFoundError:
+        print('Source file is not found!')
+        return 'Bob'
+
+    # USYD CODE CITATION ACKNOWLEDGEMENT
+    #
+    # I declare that the code for readline() method was referenced from lab exercises:
+    # Lab 10: Files > 4. PIAT: Sorter > sorter.py
+    #
+    # Original URL
+    # https://edstem.org/au/courses/10283/lessons/33986/slides/237709
+    # Last access 3 May, 2023
+
+    i = 0
+    found_animals = []
+    # search thru animals.txt for similar 1st alpabet character
+    while i < len(animals_ls):
+        if animals_ls[i][0] == first_alpha:
+            compared_animal = animals_ls[i]
+            found_animals.append(compared_animal)
+        i += 1
+
+    i = 0
+    new_name = ''
+    previously_used = False
+    name_index = 0
+    # only need to loop read_name once, found_animals multiple times
+    # to get what is the existing names used, and for each name used
+    # check it with the found_animals to see if it is matching
+    while i < len(read_name) and not previously_used:
+        j = 0
+        while j < len(found_animals):
+            if found_animals[j] == read_name[i]:
+                name_index += 1
+                # if previously_used, found 1 matching element in both ls
+                # increment index for found_animals[index]
+
+                if name_index == len(found_animals):
+                    name_index = 0  # prevent index exceeds len, throwing error
+                break
+            j += 1
+        i += 1
+    new_name = found_animals[name_index]
+    # if no previously_used, use the 1st index of found_animals
+
+    if os.path.exists(past):
+        with open(past, "a") as f:
+            f.write(new_name + '\n')
+    else:
+        with open(past, "w") as f:
+            f.write(new_name + '\n')
+    return new_name
+
+def main():
+    while True:
+        name = input('Check name: ').lower()
+
+        result = is_valid_name(name)
+        if name == 's':
+            quit()
+        if result is True:
+            prof_status = is_profanity(name)
+            if prof_status is False:
+                print(f'{name} is a valid name!')
+                continue
+        else:
+            new_name = generate_name(name, \
+                                     "/home/files/animals.txt", \
+                                     "/home/files/names.txt"
+                                     )
+            print(f'Your new name is: {new_name}'.rstrip())
+
+
+if __name__ == "__main__":
+    main()
