@@ -1,7 +1,5 @@
-# Chat Messaging Template
-This project contains the necessary scaffold in order to get your multi-million chat application idea started! The main technology driving this application is `socket.io` which allows two way communication between the client side and server side through so called "socket events". 
-
-Unfortunately, the maker of this template is lousy and forgot to put in the necessary security measures. It's your job to ensure a safe communication between users of your chat system. 
+# Extending Security Project - Chat Messaging Template
+Scenario: The basic E2E secure messaging app is extended implementing to be a website support system for undergraduate School of Computer Science University of Sydney students to share experiences and seek the necessary help (if needed) for their academic studies. It should also have a knowledge repository where students can share reading or learning materials that they found useful to understand challenging computing concepts. You already have an account and messaging service that allows pair-wise communication among students and to specific academic/administrative staff who they add as friends.
 
 # Setup
 To setup, install these packages 
