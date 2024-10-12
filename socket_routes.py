@@ -50,13 +50,6 @@ def disconnect():
 '''
 ######  -- how public/private key generated with PKCS1_v1_5 --  ###### 
 
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "Using pycrypto, how to import a RSA public key and use it to encrypt a string?"
-Original URL
-https://stackoverflow.com/questions/21327491/using-pycrypto-how-to-import-a-rsa-public-key-and-use-it-to-encrypt-a-string
-Last access April, 2024
-
 # for digital signature
 # from Crypto.Signature import PKCS1_v1_5
 # from Crypto.Hash import SHA256
@@ -100,17 +93,6 @@ def get_private_key(filename):
         private_key = file.read()
     return private_key
 
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: 
-- "PKCS#1 OAEP (RSA)"
-- "NotImplementedError: Use module Crypto.Cipher.PKCS1_OAEP instead error"
-Original URL
-- https://pycryptodome.readthedocs.io/en/latest/src/cipher/oaep.html
-- https://stackoverflow.com/questions/44427934/notimplementederror-use-module-crypto-cipher-pkcs1-oaep-instead-error
-Last access April, 2024
-'''
 def decrypt_msg(encrypted_msg, private_key):
     private_key_obj = RSA.importKey(private_key)
     cipher = PKCS1_OAEP.new(private_key_obj)
@@ -135,26 +117,10 @@ def get_mac(username, receiver, room_id):
     for msg in encrypted_msg:  # convert into string
         msg_in_str = ''.join([str(msg)])
 
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "Python encoded message with HMAC-SHA256"
-    Original URL
-    https://stackoverflow.com/questions/38133665/python-encoded-message-with-hmac-sha256
-    Last access April, 2024
-    '''
     user_pw_in_bytes = user_pw.encode('utf-8')  # convert string into bytes
     mac = hmac.new(user_pw_in_bytes, msg_in_str.encode(), hashlib.sha256).hexdigest()
     return mac
 
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "Digital Signature Verification with Python and hmac"
-Original URL
-https://gist.github.com/craigderington/9cb3ffaf4279af95bebcc0470212f788
-Last access April, 2024
-'''
 def verify_mac(msg, received_mac, username):
     user_pw = db.get_password(username)
     user_pw_in_bytes = user_pw.encode('utf-8')
