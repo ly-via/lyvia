@@ -67,14 +67,6 @@ def login_user():
     session_id = secrets.token_hex()
     SESSION_TOKEN_DICT[username] = session_id
     # assign the values
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "Flask – Sessions"
-    Original URL
-    https://www.tutorialspoint.com/flask/flask_sessions.htm
-    Last access April, 2024
-    '''
     session[f'user_{username}'] = username
     session[f'sessionID_{username}'] = session_id
 
@@ -86,14 +78,6 @@ def login_user():
         return "Error: Username and password cannot be empty!"
 
     # PASSWORD VERIFICATION
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "Python hashlib Module | Guide To Hashing"
-    Original URL
-    https://ioflood.com/blog/python-hashlib/
-    Last access April, 2024
-    '''
     user = db.get_user(username)
     if user is not None:
         stored_salt = db.get_salt(username)
@@ -119,14 +103,6 @@ def signup():
     return render_template("signup.jinja")
 
 # check max 3 subsequent password
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "Checking for Repeating Characters in a Password Using Python - Simple Validation"
-Original URL
-https://www.youtube.com/watch?v=fr3SmErTlnI
-Last access March, 2024
-'''
 @app.route("/signup")
 def check_subsequent_char(password):
     last_char = None
@@ -153,14 +129,6 @@ def signup_user():
     session_id = secrets.token_hex()
     SESSION_TOKEN_DICT[username] = session_id
     # assign the values
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "Flask – Sessions"
-    Original URL
-    https://www.tutorialspoint.com/flask/flask_sessions.htm
-    Last access April, 2024
-    '''
     session[f'user_{username}'] = username
     session[f'sessionID_{username}'] = session_id
 
@@ -180,17 +148,6 @@ def signup_user():
 
     # VALIDATE STRONG PASSWORD
     # re.search -- at most 3 repeating characters
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: 
-    - "Checking the strength of a password (how to check conditions)"
-    - 'Determine if string has 3 or more duplicate sequential characters in Python"
-    Original URL
-    - https://stackoverflow.com/questions/16709638/checking-the-strength-of-a-password-how-to-check-conditions
-    - https://stackoverflow.com/questions/28007101/determine-if-string-has-3-or-more-duplicate-sequential-characters-in-python
-    Last access March, 2024
-    '''
     not_subsequent = check_subsequent_char(password)
     
     if not 8 < len(password) < 20 or \
@@ -213,14 +170,6 @@ def signup_user():
         salt_pw = password + salt
 
         # hashing
-        '''
-        USYD CODE CITATION ACKNOWLEDGEMENT
-        I declare that the following lines of code have been taken from the
-        website titled: "Adding Salt to Hashing: A Better Way to Store Passwords"
-        Original URL
-        https://auth0.com/blog/adding-salt-to-hashing-a-better-way-to-store-passwords/
-        Last access April, 2024
-        '''
         password = hashlib.sha256(salt_pw.encode()).hexdigest()
         db.insert_user(username, password, salt)    # insert data into db
         return url_for('table', username=username)  # direct to homepage
@@ -246,14 +195,6 @@ def display_friendlist():
 
     # -- SESSION TOKEN VERIFICATION -- used in every function!
     # REF : 1) https://www.tutorialspoint.com/flask/flask_sessions.htm
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "How to use Flask-Session in Python Flask ?"
-    Original URL
-    https://www.geeksforgeeks.org/how-to-use-flask-session-in-python-flask/
-    Last access April, 2024
-    '''
     # check username
     if not f'user_{username}' in session:
         return redirect(url_for('login'))
@@ -365,14 +306,6 @@ def add_friend():
         else:
             # ENCRYPTION to store friend's username securely
             # use the consistent encryption key from db
-            '''
-            USYD CODE CITATION ACKNOWLEDGEMENT
-            I declare that the following lines of code have been taken from the
-            website titled: "Fernet (symmetric encryption) using Cryptography module in Python"
-            Original URL
-            https://www.geeksforgeeks.org/fernet-symmetric-encryption-using-cryptography-module-in-python/
-            Last access April, 2024
-            '''
             key_value = Fernet(encryption_key)
             # encode() -> convert from string to bytes datatype & encrypt
             encrypted_username = key_value.encrypt(friend.encode())
