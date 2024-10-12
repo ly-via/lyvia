@@ -36,14 +36,6 @@ class Friend(Base):
     status : Mapped[str] = mapped_column(String)
 
     # add constraints 
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "SQLAlchemy: Possible to declare a column as primary key declaratively?"
-    Original URL
-    https://stackoverflow.com/questions/25749803/sqlalchemy-possible-to-declare-a-column-as-primary-key-declaratively
-    Last access April, 2024
-    '''
     __table_args__ = (
         PrimaryKeyConstraint('sender', 'friend'),
     )
@@ -51,14 +43,6 @@ class Friend(Base):
 # -----------------------------------------------------------------------------------------
 
 # OnlineUser class, used to keep track of which user is online
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "How to Make a Chat Application in Python"
-Original URL
-https://thepythoncode.com/article/make-a-chat-room-application-in-python
-Last access April, 2024
-'''
 class OnlineUser():
     def __init__(self):
         self.online_user = set()
@@ -133,13 +117,6 @@ class Room():
 
 class Chatroom(Base):
     __tablename__ = "chatroom"
-    '''
-    USYD CODE CITATION ACKNOWLEDGEMENT
-    I declare that the following lines of code have been taken from the
-    website titled: "unable to create autoincrementing primary key with flask-sqlalchemy"
-    Original URL
-    https://stackoverflow.com/questions/20848300/unable-to-create-autoincrementing-primary-key-with-flask-sqlalchemy    Last access April, 2024
-    '''
     msg_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     room_id: Mapped[int] = mapped_column(Integer)
     username: Mapped[str] = mapped_column(String)
