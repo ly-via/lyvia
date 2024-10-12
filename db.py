@@ -42,16 +42,6 @@ def get_user(username: str):
 
 # -----------------------------------------------------------------------------------------
 
-# REF for sql query:
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "Difference between filter and filter_by in SQLAlchemy"
-Original URL
-https://stackoverflow.com/questions/2128505/difference-between-filter-and-filter-by-in-sqlalchemy
-Last access April, 2024
-'''
-
 # gets salt from the database
 def get_salt(username: str):
     with Session(engine) as session:
@@ -87,14 +77,6 @@ ENCRYPTION_KEY_FILE = 'CERTIFICATES/encryption.key'
 
 # -- FOR ENCRYPTING FRIEND'S USERNAME -- 
 # to ensure the encryption key remained consistent AT ALL TIMES
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: "Encrypt and Decrypt Files using Python"
-Original URL
-https://www.geeksforgeeks.org/encrypt-and-decrypt-files-using-python/
-Last access April, 2024
-'''
 def get_encryption_key():
     if not os.path.exists(ENCRYPTION_KEY_FILE):
         key = Fernet.generate_key()
@@ -197,14 +179,6 @@ def for_add_friend(username: str):
         decrypted_usernames = []
         key_value = Fernet(encryption_key)  # symmetric encryption
         for request in received_requests:
-            '''
-            USYD CODE CITATION ACKNOWLEDGEMENT
-            I declare that the following lines of code have been taken from the
-            website titled: "Unable to Except cryptography.fernet.InvalidToken Error in Python"
-            Original URL
-            https://stackoverflow.com/questions/60912944/unable-to-except-cryptography-fernet-invalidtoken-error-in-python
-            Last access April, 2024
-            '''
             try:
                 decrypted_username = key_value.decrypt(request.friend).decode()
                 # decode() -> convert from bytes to string datatype & then decrypt
@@ -315,17 +289,6 @@ def insert_encrypted_msg(room_id: int, username: str, receiver: str, encrypted_m
 
 # -----------------------------------------------------------------------------------------
 
-'''
-USYD CODE CITATION ACKNOWLEDGEMENT
-I declare that the following lines of code have been taken from the
-website titled: 
-- "Using OR in SQLAlchemy"
-- "SQLAlchemy 2.0 Documentation"
-Original URL
-- https://stackoverflow.com/questions/7942547/using-or-in-sqlalchemy
-- https://docs.sqlalchemy.org/en/20/core/sqlelement.html#sqlalchemy.sql.expression.and_
-Last access April, 2024
-'''
 # gets message history
 def get_encrypted_msg(username: str, receiver: str):
     with Session(engine) as session:
