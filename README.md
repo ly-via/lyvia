@@ -11,10 +11,7 @@ Volatility forecasting is a critical aspect of financial risk management. This p
 
 ## Approach
 - **Data Preparation**: Collected and cleaned historical stock price data, calculated daily returns and realised volatility.
-- **Model Implementation**: Built and tuned several volatility models, including:
--   HAR (Heterogeneous AutoRegressive)
--   LM (Linear Model)
--   HAV (High-frequency-based Volatility models)
+- **Model Implementation**: Built and tuned several volatility models, including HAR (Heterogeneous AutoRegressive), LM (Linear Regression), HAV (High-frequency-based Volatility models)
 - **Evaluation**: Assessed model performance using statistical metrics such as RMSE and out-of-sample forecasting accuracy.
 - **Insight Generation**: Analysed which models best captured volatility dynamics under different market conditions.
 
