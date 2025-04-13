@@ -1,4 +1,4 @@
-# Stock Volatility Analysis
+# Coral Reef Bleaching Events
 This project explores
 
 ## Project Overview
