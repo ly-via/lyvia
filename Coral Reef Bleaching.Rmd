@@ -1,0 +1,937 @@
+---
+title: "DATA3888 Discipline Assessment 1"
+subtitle: "Reef"
+author: "520326356"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+format:
+  html:
+    code-tools: true
+    code-fold: false
+    fig_caption: yes
+    number_sections: yes
+    embed-resources: true
+    theme: flatly
+    css: 
+      - https://use.fontawesome.com/releases/v5.0.6/css/all.css
+    toc: true
+    toc_depth: 4
+    toc_float: true
+execute:
+  echo: true
+  tidy: true
+---
+
+## Introduction
+
+The main goal of this study is divided into different parts. In Part 1, the section is to explore if geographic patterns, focusing on bleaching is more common in tropical midlatitude sites from 2014-2017. It is also focused on exploring whether this remained across different years globally. In Part 2, this study focuses on the exploration of the predictability of future bleaching events in the Great Barrier Reef by comparing the effectiveness of environmental variables from four years prior against contemporary variables to predict coral bleaching outcomes.
+
+## Driving Problem(s)
+
+1.  **Part 1**: Do coral bleaching events occur most frequently at tropical midlatitude sites (15–20 degrees north and south of the Equator)? Is this pattern consistent across all years if that is the case?
+
+2.  **Part 2**: Are environmental variables from four years prior able to predict coral bleaching as accurately as contemporary variables?
+
+## Data Description
+
+The data provided entails two datasets containing important data to analyse coral bleaching and relevant environmental factors.
+
+##### Dataset #1: Bleaching Surveys
+
+This dataset includes data on coral bleaching severity across different reef sites in the Great Barrier Reef (GBR). The dataset contains 7647 rows of observations and 10 variables, focusing on survey locations, methods used, and depth. These data are important to study how environmental variables from four years prior compare to contemporary variables to predict coral bleaching.
+
+```{r warning=FALSE, message=FALSE}
+
+# load dataset 
+bleachingData = read.csv("bleachingSurveys.csv")
+
+# verify loading
+dim(bleachingData)
+
+# make a copy of dataset
+bleachingData_og <- data.table::copy(bleachingData)
+```
+
+A copy of the loaded bleaching survey dataset is made to preserve the original data. The copy is named `bleachingData_og`.
+
+------------------------------------------------------------------------
+
+##### Dataset #2: Reef Check
+
+While this dataset contains data on coral bleaching events at 3351 locations in 81 countries from 1998 to 2017. Information contained includes reef locations, severity of bleaching, as well as environmental and temperature-related metrics. For example, sea surface temperature (SST), temperature anomalies (SSTA), and Degree Heating Weeks (DHW).
+
+```{r warning=FALSE, message=FALSE}
+
+reefCheck = read.csv("Reef_Check_with_cortad_variables_with_annual_rate_of_SST_change.csv")
+dim(reefCheck)
+reefCheck_og <- data.table::copy(reefCheck)
+```
+
+Similarly, a copy of this loaded dataset is made, named `reefCheck_og`.
+
+## Exploratory Data Analysis
+
+#### Load Required Packages
+
+```{r loadpackages, message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(viridis)
+library(cvTools)
+library(dplyr)
+library(plotly)
+library(lubridate)
+library(ncdf4)
+library(CFtime)
+library(sf)
+library(caret)
+library(MASS)
+library(leaflet)
+library(tidyverse)
+library(rnaturalearth)
+library(shiny)
+library(reshape2)
+library(DT)
+library(gridExtra)
+```
+
+#### Check Missing Values
+
+**Missing Values in copy of `bleachingData` dataset**:
+
+Here, we first check the number of missing values in **`bleachingData`** dataset.
+
+```{r warning=FALSE, message=FALSE}
+
+bd_missing_values <- colSums(is.na(bleachingData_og))
+bd_missing_values_df <- data.frame(
+  Count = bd_missing_values
+)
+datatable(bd_missing_values_df, caption = "Missing Values in Bleaching Data")
+```
+
+a.  ***depth*** variable has over 2900 missing values. As *depth* could be an important factor in affecting coral bleaching, imputation using the median value is done instead of removing the missing values.
+
+```{r warning=FALSE, message=FALSE}
+
+bleachingData_og$depth[is.na(bleachingData_og$depth)] <- median(bleachingData_og$depth, na.rm = TRUE)
+```
+
+------------------------------------------------------------------------
+
+**Missing Values in copy of `reefCheck` dataset**:
+
+Now, missing values in reef check data.
+
+```{r warning=FALSE, message=FALSE}
+
+missing_values <- colSums(is.na(reefCheck_og))
+missing_values_df <- data.frame(
+  Count = missing_values
+)
+datatable(missing_values_df, caption = "Missing Values in Reef Check")
+```
+
+a.  ***Region*** and ***Diversity*** variables have 415 missing values each. As *Region* is in character datatype, the value "Unknown" is used to replace the missing values. While *Diversity* (in numeric), median is used to replace the missing values.
+
+```{r warning=FALSE, message=FALSE}
+
+if (is.character(reefCheck_og$Region)) {
+  reefCheck_og$Region[is.na(reefCheck_og$Region)] <- "Unknown"
+}
+
+if (is.numeric(reefCheck_og$Diversity)) {
+  reefCheck_og$Diversity[is.na(reefCheck_og$Diversity)] <- median(reefCheck_og$Diversity, na.rm = TRUE)
+}
+```
+
+b.  ***S1*** to ***S4*** variables have around 9 to 107 missing values.
+
+c.  ***ClimSST***, ***Temperature_Mean***, and other environmental variables have around 1 to 5 missing values each. With this small proportion, the missing values are removed.
+
+```{r warning=FALSE, message=FALSE}
+
+reefCheck_og <- reefCheck_og %>%
+  filter(!is.na(Temperature_Mean) & 
+         !is.na(Temperature_Minimum) & 
+         !is.na(Temperature_Maximum) &
+         !is.na(Windspeed) & 
+         !is.na(SSTA) & 
+         !is.na(SSTA_Mean) & 
+         !is.na(SSTA_Maximum) & 
+         !is.na(SSTA_DHW) & 
+         !is.na(SSTA_Frequency) & 
+         !is.na(SSTA_FrequencyMax) & 
+         !is.na(SSTA_FrequencyMean))
+```
+
+------------------------------------------------------------------------
+
+#### Convert Date Columns to Date Format
+
+All dates are formatted properly for time-series analysis.
+
+```{r warning=FALSE, message=FALSE}
+
+bleachingData_og$surveyDate <- as.Date(bleachingData_og$surveyDate, format="%Y-%m-%d")
+reefCheck_og$Date <- as.Date(reefCheck_og$Date, format="%Y-%m-%d")
+
+bleachingData_og$year <- year(bleachingData_og$surveyDate)
+reefCheck_og$year <- year(reefCheck_og$Date)
+```
+
+------------------------------------------------------------------------
+
+#### Analyse Summary Statistics
+
+After cleaning the data, we are interested in understanding the summary statistics for bleaching severity and the metrics for temperature.
+
+a.  **`bleachCat` variable**
+
+```{r warning=FALSE, message=FALSE}
+
+summary(bleachingData_og$bleachCat)
+```
+
+Before converting into ordered factor, we can see that most of the bleaching severity is low, but there are cases when the severity is high. However, the results suggested a right-skewed distribution with a slightly higher mean than median. This may suggest most reefs experience moderate bleaching, but a few suffer from severe bleaching impacts.
+
+b.  **`Average_bleaching` variable**
+
+```{r warning=FALSE, message=FALSE}
+
+summary(reefCheck_og$Average_bleaching)
+```
+
+The results suggest most of the reefs have little to no bleaching, but a few have extreme bleaching. Similar to `bleachCat`, this suggests the bleaching is not evenly distributed with the right-skewed distribution.
+
+c.  **`ClimSST` variable**
+
+```{r warning=FALSE, message=FALSE}
+
+summary(reefCheck_og$ClimSST) 
+```
+
+The result suggest most of the temperatures range between 298 K and 302 K (approximately between 25°C and 29°C).
+
+d.  **`Temperature_Mean` variable**
+
+```{r warning=FALSE, message=FALSE}
+
+# summary stats
+temp_summary <- summary(reefCheck_og$Temperature_Mean)
+
+caption_label <- paste0("Min: ", round(temp_summary["Min."], 1), " | ",
+                        "1st Qu.: ", round(temp_summary["1st Qu."], 1), " | ",
+                        "Median: ", round(temp_summary["Median"], 1), " | ",
+                        "Mean: ", round(temp_summary["Mean"], 1), " | ",
+                        "3rd Qu.: ", round(temp_summary["3rd Qu."], 1), " | ",
+                        "Max: ", round(temp_summary["Max."], 1))
+
+ggplot(reefCheck_og, aes(x = Temperature_Mean)) +
+  geom_histogram(bins = 50, fill = "#0d0887") +
+  labs(
+    title = "Histogram of Temperature_Mean",
+    caption = caption_label
+  ) +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = 0.5, size = 11))
+```
+
+Most of the temperatures range between 299.9 K (\~26.8°C) and 300.9 K (\~27.8°C). According to the Coral Reef Alliance (2022), this aligns with the expected temperatures for the coral reef. The data are normally distributed, with slightly similar mean and median.
+
+------------------------------------------------------------------------
+
+#### Visualising `Bleaching Survey` Dataset
+
+Here, we are interested in performing a basic exploratory data analysis using a map visualisation. As `bleachCat` is ordinal, it is factored so that it is converted into categories from 0 (the least bleaching) to 4 (most bleaching).
+
+```{r warning=FALSE, message=FALSE}
+
+world <- map_data("world")
+
+bleachingData_og$bleachCat <- as.factor(bleachingData_og$bleachCat)
+
+plasma_pal <- colorFactor(viridis::plasma(5), 
+                          domain = levels(bleachingData_og$bleachCat))
+
+tag.map.title <- tags$style(HTML("
+  .leaflet-control.map-title { 
+    position: absolute;
+    left: 50%;
+    top: 10px;
+    transform: translate(70%,20%);
+    text-align: center;
+    padding-left: 10px;
+    padding-right: 10px; 
+    background: rgba(255, 255, 255, 0.75);
+    font-weight: bold;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: visible;
+  }
+"))
+
+title <- tags$div(
+  tag.map.title, HTML("Bleaching Survey Data")
+) 
+
+leaflet(data = bleachingData_og) %>%
+  addTiles() %>%
+  addControl(title, position = "topleft", className="map-title") %>%
+  addCircleMarkers(
+    ~longitude, ~latitude,
+    color = ~plasma_pal(bleachCat),
+    fillOpacity = 0.8,
+    radius = 4,
+    popup = ~paste0("<b>Bleaching Category:</b> ", bleachCat, "<br>")
+  ) %>%
+  addLegend("bottomright",
+    pal = plasma_pal,
+    values = bleachingData_og$bleachCat,
+    title = "Bleaching Category",
+    opacity = 1
+  ) %>%
+  setView(lng = mean(bleachingData_og$longitude, na.rm = TRUE), 
+          lat = mean(bleachingData_og$latitude, na.rm = TRUE), 
+          zoom = 3)
+```
+
+From the map visualisation, it shows the southern part of the GBR has lower bleaching severity. Conversely, the northern areas are experiencing more severe coral bleaching.
+
+------------------------------------------------------------------------
+
+## Part 1: Claim Evaluation & Map Visualisation
+
+### **Visualising Coral Bleaching in Global vs Midlatitude Sites (2014-2017)**
+
+Using the `reefCheck` dataset, it is filtered to only look at data from 2014 to 2017. The `Average_bleaching` percentage for each reef is calculated, which is categorised into five ordinal levels (0-4). In addition, key statistics that are linked to the specific coordinates are calculated and shown in the pop-up box. These include key statistics such as `Avg Bleaching` (in %), `Bleaching Category`, `SST Change` and `Temperature`. An interactive map is created to visualise the comparison between coral bleaching occurring within midlatitude and other sites.
+
+```{r warning=FALSE, message=FALSE}
+
+# using the filtered 2014-2017 -- reefCheck_filtered
+reefCheck_filtered <- reefCheck_og %>% filter(Year >= 2014 & Year <= 2017)
+
+summary_data_global <- reefCheck_filtered %>%
+  group_by(Longitude.Degrees, Latitude.Degrees) %>%
+  summarise(
+    avg_bleaching = mean(Average_bleaching, na.rm = TRUE),
+    avg_SST_change = mean(rate_of_SST_change, na.rm = TRUE),
+    avg_Temp = mean(Temperature_Mean, na.rm = TRUE)
+  )
+
+# convert bleaching cat. to discrete
+summary_data_global$bleaching_category <- cut(summary_data_global$avg_bleaching, 
+                                              breaks = 5, 
+                                              labels = c("0", "1", "2", "3", "4"))
+
+plasma_pal <- colorFactor(viridis::plasma(5), 
+                          domain = summary_data_global$bleaching_category)
+
+highest_bleaching_locations_filtered <- summary_data_global %>%
+  filter(bleaching_category == "4") %>%
+  arrange(desc(avg_bleaching))
+
+title <- tags$div(
+  tag.map.title, HTML("Global Coral Bleaching Events Over All Years")
+) 
+
+leaflet() %>%
+  addTiles() %>%
+  addControl(title, position = "topleft", className="map-title") %>%
+  addRectangles(
+    lng1 = -180, lat1 = -20, 
+    lng2 = 180, lat2 = -15, 
+    fillColor = "red", fillOpacity = 0.2, stroke = FALSE
+  ) %>%
+    
+  addRectangles(
+    lng1 = -180, lat1 = 15, 
+    lng2 = 180, lat2 = 20, 
+    fillColor = "red", fillOpacity = 0.2, stroke = FALSE
+  ) %>%
+
+  addCircleMarkers(
+    data = summary_data_global,
+    lng = ~Longitude.Degrees,
+    lat = ~Latitude.Degrees,
+    color = ~plasma_pal(bleaching_category),
+    fillOpacity = 0.7, 
+    stroke = FALSE, 
+    radius = 5,
+    
+    popup = ~paste0(
+      "<b>Avg Bleaching: </b>", round(avg_bleaching, 2), "<br>",
+      "<b>Bleaching Category: </b>", bleaching_category, "<br>",
+      "<b>Avg SST Change: </b>", round(avg_SST_change, 2), "<br>",
+      "<b>Avg Temp: </b>", round(avg_Temp, 2)
+    )
+  ) %>%
+  
+    addCircleMarkers(
+    data = highest_bleaching_locations_filtered,
+    lng = ~Longitude.Degrees,
+    lat = ~Latitude.Degrees,
+    color = "#f1f525", 
+    fillOpacity = 1,
+    radius = 6,
+    stroke = TRUE,
+    weight = 2,
+    popup = ~paste0(
+      "<b>Avg Bleaching: </b>", round(avg_bleaching, 2), "<br>",
+      "<b>Bleaching Category: </b>", bleaching_category, "<br>",
+      "<b>Avg SST Change: </b>", round(avg_SST_change, 2), "<br>",
+      "<b>Avg Temp: </b>", round(avg_Temp, 2)
+    )
+  ) %>%
+
+  addLegend("bottomright",
+    pal = plasma_pal,
+    values = summary_data_global$bleaching_category,
+    title = "Bleaching Category",
+    opacity = 1
+  )
+```
+
+**Why Interactive Map Visualisation?**
+
+The reason to create an interactive map is to allow the users to interact with the map while exploring the spatial distribution of coral bleaching in midlatitude sites. Here, the midlatitude sites are highlighted in the red rectangle boxes. This allows easy comparison across different regions. This map was created with filters applied, including focusing on midlatitude sites (15-20 degrees north and south of the Equator) from the period of 2014 to 2017. With the key statistics (when data points are clicked on the map), we can better understand or compare between different levels of bleaching categories.
+
+The aggregation of `Average_bleaching`, `SST Change` and `Temperature` with *mean* is used when creating this map. Instead of using these variables from the `reefCheck` dataset directly, this is to avoid duplicated points on the map. Because in case of a location appears many times in the dataset, the plot would likely be messy as there could be overlapping data points. Apart from that, the bleaching category variable is converted into a discrete data type to make it consistent with the Bleaching Survey data. In particular, it is converted into five main categories (0-4).
+
+**Map Visualisation Evaluation**
+
+From the map that shows the distribution of coral bleaching events globally, most data points are categorised in the bleaching category "0". This suggests many of these locations have low average bleaching severity. The locations with the highest bleaching category (category 4) are coloured yellow. When we took a closer look, we learnt that these locations are actually outside the midlatitude sites. Amongst these locations, the highest bleaching category is 4 and the average bleaching is 52.5%, located in *Malaysia*. However, only looking at which locations have the highest bleaching categories is not strong enough to support or contradict the claim. Hence, we further explore the proportion of bleaching events from 2014 to 2017 for both within and outside midlatitude sites.
+
+### **Comparing Proportion & Average Bleaching Severity**
+
+Based on the claim, it indicates that the probability of coral bleaching is the highest at tropical midlatitude sites. To analyse this, we analysed the percentage of bleaching events in these midlatitude sites. We first look at the proportion of bleaching events in midlatitude sites by counting the number of bleaching events occurring in the specific areas and compare them with the total bleaching events that occurred.
+
+```{r warning=FALSE, message=FALSE}
+
+# within midlatitude bands and 2014-2017
+midlatitude_bleaching <- reefCheck_filtered %>%
+  filter((abs(Latitude.Degrees) >= 15 & abs(Latitude.Degrees) <= 20) | 
+         (abs(Latitude.Degrees) >= -20 & abs(Latitude.Degrees) <= -15)) %>%
+  summarise(midlatitude_count = n())
+
+# all bleaching events in 2014-2017
+total_bleaching <- reefCheck_filtered %>%
+  summarise(total_count = n())
+
+midlatitude_proportion <- midlatitude_bleaching$midlatitude_count / total_bleaching$total_count
+midlatitude_proportion
+```
+
+The output suggests that only about 19% of the bleaching data from 2014 to 2017 are from midlatitude sites. This indicates the majority of bleaching occurred outside the midlatitude sites. In addition, we also compare the differences in the average bleaching severity between midlatitude and outside these midlatitude sites.
+
+```{r warning=FALSE, message=FALSE}
+
+avg_severity <- reefCheck_filtered %>%
+  mutate(midlatitude = ifelse(abs(Latitude.Degrees) >= 15 & abs(Latitude.Degrees) <= 20, "Midlatitude", "Other")) %>%
+  group_by(midlatitude) %>%
+  summarise(avg_bleaching = mean(Average_bleaching, na.rm = TRUE))
+knitr::kable(avg_severity, caption = "Comparing Midlatitude and Other Sites")
+```
+
+From the outputs, the average bleaching severity at midlatitude sites is 1.74. Whereas, the average bleaching severity at other sites is 3.39, higher than within the midlatitude sites. This higher average bleaching score indicates a higher probability of coral bleaching events. In fact, this also indicates the worst bleaching events are occurring outside the midlatitude sites.
+
+These explorations and evaluations suggest that the proportion of bleaching events occurring within the tropical midlatitude sites is relatively small. In addition, the average bleaching severity is lower in the midlatitude sites. Looking back at the claim the author made, **the analysis done would oppose the claim that the highest probability of coral bleaching occurred at tropical midlatitude sites.**
+
+------------------------------------------------------------------------
+
+## Part 2: Predictive Modeling Strategy
+
+In this part, we are interested in exploring how well the current environmental factors in predicting coral bleaching in the Great Barrier Reef. To do this, these factors are compared to those measured four years prior. Our main goal here is to find out which environmental factors are more effective in predicting coral bleaching events, between the current year and four years prior. To answer Farhan's inquiry about predicting future coral bleaching, the environmental data from `eReefs` database was used. This database includes important data such as *total nitrogen*, *pH*, *salinity*, *algae* and more.
+
+#### Data Description
+
+The first dataset used in this section is `Bleaching Data`. This dataset describes the actual bleaching. It contains geographical data, survey dates, and bleaching categories (ordinal datatype). This dataset only contains survey data from 2015 to 2017. The second dataset is `eReefs`. This is an environmental dataset that contains exploratory variables such as temperature, pH, total nitrogen etc.
+
+#### Data Loading & Cleaning
+
+Although `Bleaching Data` has been loaded in Part 1, this dataset is loaded again in this part for accuracy. After `eReefs` database is loaded, environmental variables (e.g. *temperature*, *salt*, *pH*, *total nitrogen* and *algae*) are retrieved. Data cleaning is performed for both datasets, including replacing missing values with median, formatting variables and removing missing values when appropriate. As the time data included in this dataset is raw time data obtained from the `NetCDF` file, it is converted to calendar dates.
+
+```{r warning=FALSE, message=FALSE}
+
+# -- load Bleaching Data --
+bleachingData <- read.csv("bleachingSurveys.csv") %>%
+  mutate(
+    surveyDate = as.Date(surveyDate, format = "%Y-%m-%d"),
+    year = year(surveyDate),
+    bleachCat = factor(bleachCat, levels = c(0, 1, 2, 3, 4), ordered = TRUE),
+    lat = as.numeric(latitude),
+    long = as.numeric(longitude)
+  )
+
+# replace missing values in depth values with the median
+bleachingData$depth[is.na(bleachingData$depth)] <- median(bleachingData$depth, na.rm = TRUE)
+
+# round coordinate
+bleachingData <- bleachingData %>%
+  mutate(
+    lat_round = round(lat, 1),
+    long_round = round(long, 1)
+  )
+
+# -- load eReefs --
+eReefs_nc <- ncdf4::nc_open("eReefs_assessment.nc")
+nc_lat <- ncdf4::ncvar_get(eReefs_nc, "latitude")
+nc_long <- ncdf4::ncvar_get(eReefs_nc, "longitude")
+timestamps <- ncdf4::ncvar_get(eReefs_nc, "time")  # numeric times
+temp <- ncdf4::ncvar_get(eReefs_nc, "temp")
+salt <- ncdf4::ncvar_get(eReefs_nc, "salt")
+pH <- ncdf4::ncvar_get(eReefs_nc, "PH")
+total_nitrogen <- ncdf4::ncvar_get(eReefs_nc, "TOTAL_NITROGEN")
+algae <- ncdf4::ncvar_get(eReefs_nc, "MA_N")
+
+# build environmental dataframe from the grid
+eReefs_df <- expand.grid(long = nc_long, lat = nc_lat, time = timestamps) %>%
+  mutate(
+    temp = as.vector(temp),
+    salt = as.vector(salt),
+    pH = as.vector(pH),
+    total_nitrogen = as.vector(total_nitrogen),
+    algae = as.vector(algae)
+  ) %>%
+  filter(!is.na(temp), !is.na(salt), !is.na(pH), 
+         !is.na(total_nitrogen), !is.na(algae)) %>%
+  mutate(
+    lat = as.numeric(lat),
+    long = as.numeric(long)
+  )
+
+# format NetCDF time into calendar dates
+time_units <- ncdf4::ncatt_get(eReefs_nc, "time", "units")
+# Example expected: "days since 1990-01-01 00:00:00 +10"
+origin_date <- as.Date("1990-01-01")
+eReefs_df <- eReefs_df %>%
+  mutate(
+    date = as.Date(time, origin = origin_date),
+    year = as.integer(format(date, "%Y"))
+  )
+
+# round coordinate
+eReefs_df <- eReefs_df %>%
+  mutate(
+    lat_round = round(lat, 1),
+    long_round = round(long, 1)
+  )
+
+dim_bleachingData <- dim(bleachingData)
+dim_eReefs_df <- dim(eReefs_df)
+
+dims_df <- data.frame(
+  DataFrame = c("bleachingData", "eReefs"),
+  Rows = c(dim_bleachingData[1], dim_eReefs_df[1]),
+  Columns = c(dim_bleachingData[2], dim_eReefs_df[2])
+)
+
+knitr::kable(dims_df, caption = "Dimensions of Data Frames")
+```
+
+#### Analyse Summary Statistics for `eReefs`
+
+```{r warning=FALSE, message=FALSE}
+
+summary_stats <- data.frame(
+  Variable = c("temp", "salt", "pH", "total_nitrogen", "algae", "log(algae + 1)"),
+  Min = c(min(eReefs_df$temp, na.rm = TRUE), 
+          min(eReefs_df$salt, na.rm = TRUE), 
+          min(eReefs_df$pH, na.rm = TRUE), 
+          min(eReefs_df$total_nitrogen, na.rm = TRUE),
+          min(eReefs_df$algae, na.rm = TRUE),
+          min(log(eReefs_df$algae + 1), na.rm = TRUE)),
+  `1st Qu.` = c(quantile(eReefs_df$temp, 0.25, na.rm = TRUE),
+               quantile(eReefs_df$salt, 0.25, na.rm = TRUE),
+               quantile(eReefs_df$pH, 0.25, na.rm = TRUE),
+               quantile(eReefs_df$total_nitrogen, 0.25, na.rm = TRUE),
+               quantile(eReefs_df$algae, 0.25, na.rm = TRUE),
+               quantile(log(eReefs_df$algae + 1), 0.25, na.rm = TRUE)),
+  Median = c(median(eReefs_df$temp, na.rm = TRUE),
+             median(eReefs_df$salt, na.rm = TRUE),
+             median(eReefs_df$pH, na.rm = TRUE),
+             median(eReefs_df$total_nitrogen, na.rm = TRUE),
+             median(eReefs_df$algae, na.rm = TRUE),
+             median(log(eReefs_df$algae + 1), na.rm = TRUE)),
+  Mean = c(mean(eReefs_df$temp, na.rm = TRUE),
+           mean(eReefs_df$salt, na.rm = TRUE),
+           mean(eReefs_df$pH, na.rm = TRUE),
+           mean(eReefs_df$total_nitrogen, na.rm = TRUE),
+           mean(eReefs_df$algae, na.rm = TRUE),
+           mean(log(eReefs_df$algae + 1), na.rm = TRUE)),
+  `3rd Qu.` = c(quantile(eReefs_df$temp, 0.75, na.rm = TRUE),
+               quantile(eReefs_df$salt, 0.75, na.rm = TRUE),
+               quantile(eReefs_df$pH, 0.75, na.rm = TRUE),
+               quantile(eReefs_df$total_nitrogen, 0.75, na.rm = TRUE),
+               quantile(eReefs_df$algae, 0.75, na.rm = TRUE),
+               quantile(log(eReefs_df$algae + 1), 0.75, na.rm = TRUE)),
+  Max = c(max(eReefs_df$temp, na.rm = TRUE),
+          max(eReefs_df$salt, na.rm = TRUE),
+          max(eReefs_df$pH, na.rm = TRUE),
+          max(eReefs_df$total_nitrogen, na.rm = TRUE),
+          max(eReefs_df$algae, na.rm = TRUE),
+          max(log(eReefs_df$algae + 1), na.rm = TRUE))
+)
+knitr::kable(summary_stats, caption = "Summary Statistics of Exploratory Variables")
+```
+
+From the output, we can see that variables like `algae` are dominated by zeros. This indicates imbalanced predictors and can lead to regression model effectiveness being reduced. Worst, even the `log(algae)` is still dominating by zeros. We further look into the distributions of each exploratory variable.
+
+**Visualising Exploratory Variables**
+
+```{r warning=FALSE, message=FALSE}
+
+eReefs_df$log_algae <- log(eReefs_df$algae + 1)
+
+eReefs_long <- eReefs_df %>%
+  pivot_longer(
+    cols = c(temp, salt, pH, total_nitrogen, algae, log_algae),
+    names_to = "variable",
+    values_to = "value" 
+  )
+
+ggplot(eReefs_long, aes(x = value, fill = variable)) +
+  geom_histogram(bins = 30, fill = "#0d0887") +
+  facet_wrap(~variable, scales = "free") + 
+  labs(title = "Histograms of Exploratory Variables", x = "Value", y = "Count") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+```
+
+The distributions for `algae` and `log(algae)` are highly uneven. This same applies to `pH` and `total_nitrogen` variables. With these highly imbalanced predictors, we have to be careful when fitting into the ordinal logistic regression.
+
+#### Data Merging
+
+Instead of using spatial join that requires a long time to load, we use another approach of applying bounding-box filtering. This combines the datasets using rounded coordinates. The `eReefs` data is filtered so that it includes data within a margin of 0.5 based on the bleaching data's longitude and latitude ranges.
+
+Two environmental subsets are created, the contemporary and lagged datasets. Using the `eReefs` data, the contemporary data is filtered using the time period of 2015 to 2017. This is done because it aligns with the available years in `bleaching data` dataset. While the lagged data is filtered using four years prior to the years used in contemporary data. In this case, the years 2011 to 2013. A new variable `year_for_join` is created for the `lagged` data to make sure each bleaching data is linked to the environmental factors from four years prior. Then, these environmental data is merged with `bleaching data` using the fields `lat_round`, `long_round`, and `year` or `year_to_join`. This is to align each bleaching survey with environmental measurements within the same year.
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(3888)
+
+# filter eReefs using bleachingData's geo. range
+range_long <- range(bleachingData$long, na.rm = TRUE)
+range_lat  <- range(bleachingData$lat, na.rm = TRUE)
+
+eReefs_df_filtered <- eReefs_df %>%
+  filter(
+    long >= (range_long[1] - 0.5), long <= (range_long[2] + 0.5),
+    lat  >= (range_lat[1] - 0.5),  lat  <= (range_lat[2] + 0.5)
+  )
+
+# contemporary environmental dataset
+env_cont <- eReefs_df_filtered %>%
+  filter(year %in% c(2015, 2016, 2017)) %>%
+  rename(
+    temp_cont = temp,
+    salt_cont = salt,
+    pH_cont   = pH,
+    tn_cont   = total_nitrogen,
+    algae_cont = algae
+  ) %>%
+  dplyr::select(lat_round, long_round, year, temp_cont, salt_cont, pH_cont, tn_cont, algae_cont)
+
+# lagged environmental dataset
+env_lag <- eReefs_df_filtered %>%
+  filter(year %in% c(2011, 2012, 2013)) %>%
+  rename(
+    temp_lag = temp,
+    salt_lag = salt,
+    pH_lag   = pH,
+    tn_lag   = total_nitrogen,
+    algae_lag = algae
+  ) %>%
+  mutate(year_for_join = year + 4) %>%
+  dplyr::select(lat_round, long_round, year_for_join, temp_lag, salt_lag, pH_lag, tn_lag, algae_lag)
+
+# merge bleaching data with contemporary
+final_data <- bleachingData %>%
+  left_join(env_cont, by = c("lat_round", "long_round", "year"))
+
+# merge lagged
+final_data <- final_data %>%
+  left_join(env_lag, by = c("lat_round", "long_round", "year" = "year_for_join"))
+
+# check merging
+print(nrow(final_data))
+print(table(final_data$bleachCat))
+```
+
+From the merging validation, we can see there are over 77 thousand rows in the merged dataset and each bleaching category contains the corresponding amount of data.
+
+### Model Building
+
+Because of bleaching category is ordinal (categories 0-4), ordinal logistic regression is used. Here, two models are built: contemporary and lagged models. The **contemporary** model depends on environmental factors, including temperature, salinity, pH, total nitrogen and algae levels. All of these data are measured in the same year as the bleaching survey. As for the **lagged** model, it uses the same environmental factors but from four years before the bleaching events occurred.
+
+Before building the model, the predictors are pre-processed using centering and scaling. To consider modelling with highly skewed variables (`total nitrogen` and `algae`), these variables are transformed using `log1p()` to handle skewness. Then, we use `polr` function from `MASS` package to estimate the models that fit proportional odds models. However, this modelling method assumes that the predictors' impact remains the same across different response levels.
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(3888)
+
+# contemporary predictors
+final_data <- final_data %>%
+  filter(is.finite(temp_cont), is.finite(salt_cont), is.finite(pH_cont),
+         is.finite(tn_cont), is.finite(algae_cont)) %>%
+  mutate(
+    temp_scaled = as.numeric(scale(temp_cont)),
+    salt_scaled = as.numeric(scale(salt_cont)),
+    pH_scaled   = as.numeric(scale(pH_cont)),
+    tn_scaled   = as.numeric(scale(tn_cont)),
+    algae_scaled = as.numeric(scale(algae_cont))
+  )
+
+# lagged predictors
+final_data <- final_data %>%
+  mutate(
+    tn_lag_log = log1p(tn_lag),
+    temp_lag_scaled = as.numeric(scale(temp_lag)),
+    salt_lag_scaled = as.numeric(scale(salt_lag)),
+    pH_lag_scaled   = as.numeric(scale(pH_lag)),
+    tn_lag_log_scaled = as.numeric(scale(tn_lag_log)),
+    algae_lag_scaled  = as.numeric(scale(algae_lag))
+  )
+
+# ordinal logistic regression
+set.seed(3888)
+
+# contemporary predictors
+model_contemporary <- polr(bleachCat ~ temp_scaled + salt_scaled + pH_scaled + tn_scaled + algae_scaled,
+                           data = final_data, Hess = TRUE)
+summary(model_contemporary)
+
+set.seed(3888)
+
+# lagged predictors
+model_lagged <- polr(bleachCat ~ temp_lag_scaled + salt_lag_scaled + pH_lag_scaled + tn_lag_log_scaled + algae_lag_scaled,
+                     data = final_data, Hess = TRUE)
+summary(model_lagged)
+```
+
+From the output from both models, we can see the predictor *coefficients* show strong statistical significance. However, when we look closely at the high coefficient for `algae`, the values suggest this variable is a major variable in the model. Even after adjustments, the algae measurements could affect the predicted probabilities significantly. Apart from that, the *intercepts* of both models show different scales. This suggests the predictors are functioning on very different scales, with about the contemporary model's 2200 compared to about 155 from the lagged model. This makes direct comparisons more difficult. When we look at *AIC comparison*, the lagged model's AIC is lower than contemporary's. This indicates a slightly better fit. However, both models are unable to differentiate medium-level categories. In which, this is caused by numerical instability.
+
+### Model Performance Evaluation
+
+We then further compare the predicted bleaching categories to the actual observed values. Here, the *accuracy* of the predictions is calculated as the ratio of correct classifications. Also, *coefficients*, *p-values*, and *odds ratios* are interpreted for the models.
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(3888)
+
+# predictions on entire dataset
+predicted_contemporary <- predict(model_contemporary, newdata = final_data, type = "class")
+predicted_lagged       <- predict(model_lagged, newdata = final_data, type = "class")
+
+# accuracy
+accuracy_contemporary <- mean(as.character(predicted_contemporary) == as.character(final_data$bleachCat))
+accuracy_lagged <- mean(as.character(predicted_lagged) == as.character(final_data$bleachCat))
+cat("Accuracy (Contemporary):", accuracy_contemporary, "\n")
+cat("Accuracy (Lagged):", accuracy_lagged, "\n")
+```
+
+As we can see from the outputs, the accuracy for the contemporary model is 32.46%, while the accuracy for the lagged model is slightly higher at 36.29%. This indicates the lagged model is showing better classification for overall bleaching categories. However, we compare them in more detail.
+
+**Contemporary Model Results**
+
+```{r warning=FALSE, message=FALSE}
+
+set.seed(3888)
+
+summary_cont <- summary(model_contemporary)
+coefs_cont <- summary_cont$coefficients
+pvals_cont <- 2 * (1 - pnorm(abs(coefs_cont[, "t value"])))
+odds_ratios_cont <- exp(coefs_cont[, "Value"])
+result_cont <- cbind(coefs_cont, p_value = pvals_cont, Odds_Ratio = odds_ratios_cont)
+print(result_cont)
+```
+
+The main findings show that almost all predictors are statistically significant significance with p-values smaller than 0.001. The contemporary model shows positive predictors, including `temperature` and `salinity`. This indicates a higher likelihood of bleaching when these values of variables are higher. The odds ratios suggest higher temperature and salinity increase the severity of coral bleaching. Conversely, higher values of `pH` and `total nitrogen` decrease the risk of bleaching. Interestingly, this is proven by the research conducted by Kennedy Wolfe & Byrne (2016), suggesting that a higher pH-value or alkali (pH-value above 7) helps in coral bleaching.
+
+On the other hand, the `algae` predictor has extremely high coefficient values. It is suggested that a slight increase of every one standard deviation in algae can actually lead to significantly lower chances of moving into a higher bleaching category. According to Smith(2022), this could be due to algae actually helping the coral bleaching by reducing direct sunlight and providing refuge for corals during heat events. This extreme value also indicates that the algae variable is affecting the model greatly and skews the results, leading to numerical instability. Hence, further studies are needed to better understand the relationship between coral bleaching and algae.
+
+**Confusion Matrix for Contemporary Model**
+
+Confusion matrix is built for this contemporary model to predict coral bleaching categories based on environmental variables from the same year.
+
+```{r message=FALSE, warning=FALSE}
+
+set.seed(3888)
+
+observed <- final_data$bleachCat
+confMatrix_cont <- confusionMatrix(data = predicted_contemporary, reference = observed)
+print(confMatrix_cont)
+```
+
+From the result, the overall classification accuracy is 32.46%. The sensitivity for categories 2 and 4 is 0%. This suggests the model does not predict these categories, and likely because these bleaching categories are not well presented. The model appears to focus on predicting categories 0, 1, and 3, with slightly better identification for category 0 (82.8% specificity). Apart from category 3 with a sensitivity of 83.5%, the model shows overall low sensitivity across all categories. With this issue of bias toward specific categories, this could suggest an imbalance in the data. Or, it could also be overlapping environmental factors between the lower and higher bleaching categories.
+
+**Lagged Model Results**
+
+```{r message=FALSE, warning=FALSE}
+
+set.seed(3888)
+
+summary_lag <- summary(model_lagged)
+coefs_lag <- summary_lag$coefficients
+pvals_lag <- 2 * (1 - pnorm(abs(coefs_lag[, "t value"])))
+odds_ratios_lag <- exp(coefs_lag[, "Value"])
+result_lag <- cbind(coefs_lag, p_value = pvals_lag, Odds_Ratio = odds_ratios_lag)
+print(result_lag)
+```
+
+Unlike the contemporary model, the lagged model shows negative predictors such as `temperature`. When looking at these lagged variables, this indicates that these predictors are associated with a lower likelihood of bleaching. The odds of higher bleaching severity decrease by around 61% when the temperature increases by one standard-deviation. When salinity increases by one standard-deviation, the odds of higher bleaching severity decrease by about 42%. For every one standard-deviation increase in pH, this decreases the odds of higher bleaching severity by almost 50%. Opposing to contemporary model, the coefficient of algae is extremely large. In comparing odds ratio and predictor contributions, it is suggested that the contemporary model appears to provide stronger and reliable predictors. However, the lagged model still shows that bleaching can be affected by these previous environmental factors, though not as strongly.
+
+**Confusion Matrix for Lagged Model**
+
+```{r message=FALSE, warning=FALSE}
+
+set.seed(3888)
+
+confMatrix_lag <- confusionMatrix(data = predicted_lagged, reference = observed)
+print(confMatrix_lag)
+```
+
+From the result, the overall classification accuracy is 36.29%, slightly better than the contemporary model. The sensitivity for category 2 is 0%. Again, this suggests the model does not predict category 2 and appears to focus on predicting all categories except category 2. In addition, the sensitivity for category 4 is only 0.24%. This means its inability to predict the highest bleaching category. However, it has a higher sensitivity for category 3, at 88.5%. This indicates the model captures most bleaching events that are from medium to high categories. This, however, leads to many false positives in these categories. By comparing these results from the confusion matrix, these findings suggest that the lagged model performs slightly better based on overall sensitivity and balanced accuracy. However, this is referring to moderate bleaching categories. Overall, both models are unable to predict category 2, emphasising that improvements are needed to improve the predictability with imbalanced data.
+
+**Actual vs Predicted Outcomes**
+
+```{r warning=FALSE, message=FALSE, fig.width=10}
+
+final_data_sf <- final_data %>%
+  mutate(
+    bleachCat_char = as.character(bleachCat),
+    predicted_contemporary_char = as.character(predicted_contemporary),
+    predicted_lagged_char = as.character(predicted_lagged),
+    agreement_contemporary = ifelse(bleachCat_char == predicted_contemporary_char, "Correct", "Incorrect"),
+    agreement_lagged = ifelse(bleachCat_char == predicted_lagged_char, "Correct", "Incorrect")
+  )
+
+final_data_sf <- final_data_sf %>%
+  mutate(
+    agreement_contemporary = factor(agreement_contemporary, levels = c("Correct", "Incorrect")),
+    agreement_lagged = factor(agreement_lagged, levels = c("Correct", "Incorrect"))
+  )
+
+world = map_data("world")
+
+ausMap = ggplot() + geom_polygon(data = world, aes(x = long, y = lat, group = group),
+    fill = "grey", alpha = 0.3) + coord_cartesian(xlim = range(bleachingData$longitude),
+    ylim = range(bleachingData$latitude))
+
+# actual bleaching categories
+actual_map <- ausMap +
+  geom_point(data = final_data, aes(x = long, y = lat, col = bleachCat), size = 3) +
+  scale_colour_viridis_d(option = "plasma") +
+  labs(title = "Actual Bleaching Categories", x = "Longitude", y = "Latitude", col = "Bleaching Category") +
+  theme_minimal()
+
+contemporary_agreement_map <- ausMap +
+  geom_point(data = final_data_sf, aes(x = longitude, y = latitude, col = agreement_contemporary), size = 3) +
+  scale_colour_manual(values = c("Correct" = "green", "Incorrect" = "red")) +
+  labs(title = "Contemporary Prediction", x = "Longitude", y = "Latitude", col = "Predicted Outcome") +
+  theme_minimal()
+
+lagged_agreement_map <- ausMap +
+  geom_point(data = final_data_sf, aes(x = longitude, y = latitude, col = agreement_lagged), size = 3) +
+  scale_colour_manual(values = c("Correct" = "green", "Incorrect" = "red")) +
+  labs(title = "Lagged Prediction", x = "Longitude", y = "Latitude", col = "Predicted Outcome") +
+  theme_minimal()
+
+actual_map
+grid.arrange(contemporary_agreement_map, lagged_agreement_map, ncol = 2)
+```
+
+The map from contemporary prediction shows that the correct predictions are mostly found in lower bleaching categories. However, it is also showing notable spatial biases with overly predicting categories 0 and 3. While the lagged model shows a more even distribution of predictors, with more correct predictions spread out over a larger area. But again, it is also showing quite a large number of incorrect predictions. Altogether, the map comparisons show that the lagged model is more reliable over spatial predictions. But, the contemporary model performs slightly better in areas with lower bleaching categories.
+
+**Understanding Why Class Imbalance**
+
+```{r warning=FALSE, message=FALSE}
+
+ggplot(final_data, aes(x = bleachCat, fill = bleachCat)) +
+  geom_bar() +
+  facet_wrap(~ year) +
+  scale_fill_viridis(discrete = TRUE, option = "plasma") + 
+  geom_text(stat = "count", aes(label = after_stat(count)), vjust = -1) +
+  theme_minimal() +
+  labs(
+    title = "Distribution of Bleaching Categories by Year",
+    x = "Bleaching Category",
+    y = "Count"
+  ) +
+  expand_limits(y = max(table(final_data$bleachCat)) * 1.1)
+```
+
+Based on the graph, we can see that it was mainly categories 0 and 1 in 2015, with a much smaller number in category 2 and none for the other categories. Both 2016 and 2017 show a more balanced distribution across the categories. From these, we can see there is a temporal imbalance in 2015. The higher categories 3 and 4 are missing and category 2 was also extremely low. This absence makes it difficult for the model to predict these categories accurately. We can also learn that the training data is imbalanced, especially because the year 2015 is skewed toward lower bleaching categories. This may be part of the reason why the model is biased in predicting lower categories. This could also clarify the reason for confusion matrices showing zero or even no sensitivity for these specific categories. As a further step to be considered to address these issues, resampling techniques could be applied to deal with imbalanced data. These could be oversampling minority classes or utilising SMOTE (R, 2019).
+
+### Limitations
+
+-   **Model Specification**: Although ordinal logistic regression is suitable for ordered response, the proportional odds assumption in ordinal logistic regression could be too limiting. This would be a limitation if the impact of the environmental predictors differs amongst bleaching categories. The selected model may lack the flexibility that is required to represent the complex relationship between those factors and the bleaching category accurately.
+
+-   **Class Imbalance**: Even though there are enough data points for all bleaching categories, the models are unable to predict bleaching category 2. This suggests there could be problems with how different environmental factors are being collected. As a reflection, penalised regressions or non-linear models that can handle class overlap more effectively could be explored.
+
+-   **Predictors Scaling & Numerical Instability**: This study focuses on scaling all predictors uniformly. This might hide the small differences that are needed to accurately predict the medium bleaching category, in this case, category 2. Because of the strong impact of algae variable in the models, the current approach of transformation and scaling might not balance the predictors effectively. The models are also numerically unstable based on high intercepts and coefficients.
+
+-   **Performance Evaluation:** It is true that the contemporary model had an overall prediction accuracy of about 32% and the lagged model is about 36% accurate. But, the inability to predict category 2 indicates misclassification issues. This might suggest the approach used is not the best choice for predicting the medium-level bleaching category.
+
+### Summary
+
+Overall, these combined insights indicate that environmental factors from four years prior could slightly improve the predictions of future coral bleaching events. In terms of accuracy, the lagged model slightly outperformed the contemporary model at 36.3% over 32.5%. The lagged model also showed a lower AIC, indicating a better fit. Hence, the **lagged model performed slightly better** in terms of higher accuracy, balanced sensitivity and spatial consistency. It also shows better temporal stability. Although bleaching conditions change from time to time, it still shows that the environmental factors obtained four years prior can be helpful to predict the coral bleaching. In particular, this can be helpful when coral ecosystems take time to react to different environmental factors.
+
+On the other hand, the contemporary model has better predictor contributions and might be more effective at capturing recent trends. As a reflection, this might be because it uses recent environmental data. This could mean it reflects the current variables more closely. Another reason stating contemporary predictors are more suited to these time-sensitive changes is because coral bleaching is affected very quickly by changing environmental factors. Temperature spikes could be a direct example, as global warming is becoming worse over the years.
+
+Still, both models have their limitations and are unable to predict the bleaching category with category 2. This is most likely caused by scaling issues and the strong impact of `algae` variable. The models could not identify the specific bleaching severity accurately. Furthermore, together with the class imbalance, it is suggested that further explorations and improvements are much needed. This could be done by exploring different scaling methods, rather than uniform scaling. It could also involve different transformation techniques, or more adaptable modelling strategies. With these, better predictions of coral bleaching could be made.
+
+------------------------------------------------------------------------
+
+# References
+
+-   Coral Reef Alliance. (2022). What Do Corals Reefs Need to Survive? Coral Reef Alliance. https://coral.org/en/coral-reefs-101/what-do-corals-reefs-need-to-survive/
+
+-   Regier, P., Duggan, M., Myers‐Pigg, A., & Ward, N. (2022). Effects of random forest modeling decisions on biogeochemical time series predictions. Limnology and Oceanography: Methods, 21(1). https://doi.org/10.1002/lom3.10523
+
+-   Tyralis, H., Papacharalampous, G., & Langousis, A. (2019). A Brief Review of Random Forests for Water Scientists and Practitioners and Their Recent History in Water Resources. Water, 11(5), 910. https://doi.org/10.3390/w11050910
+
+-   Cutler DR, Edwards TC Jr, Beard KH, Cutler A, Hess KT, Gibson J, Lawler JJ. Random forests for classification in ecology. Ecology. 2007 Nov;88(11):2783-92. doi: 10.1890/07-0539.1. PMID: 18051647.
+
+-   Smith, H. (2022, June 17). Algae can help protect coral reefs – but it’s all in the timing. Www.jcu.edu.au. https://www.jcu.edu.au/news/releases/2022/june/algae-can-help-protect-coral-reefs-but-its-all-in-the-timing
+
+-   Kennedy Wolfe, & Byrne, M. (2016, February 24). Ocean acidification is already harming the Great Barrier Reef’s growth. The Conversation. https://theconversation.com/ocean-acidification-is-already-harming-the-great-barrier-reefs-growth-55226
+
+-   R, M. with . (2019, April 10). Methods for dealing with imbalanced data \| R-bloggers. R Bloggers. https://www.r-bloggers.com/2019/04/methods-for-dealing-with-imbalanced-data/
+
+-   Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4, https://ggplot2.tidyverse.org.
+
+-   Garnier, Simon, Ross, Noam, Rudis, Robert, Camargo, Pedro A, Sciaini, Marco, Scherer, Cédric (2024). viridis(Lite) - Colorblind-Friendly Color Maps for R. doi:10.5281/zenodo.4679423, viridis package version 0.6.5, https://sjmgarnier.github.io/viridis/.
+
+-   Alfons, A. (2024). *Package “cvTools” Type Package Title Cross-Validation Tools for Regression Models*. https://cran.r-project.org/web/packages/cvTools/cvTools.pdf
+
+-   Wickham H, François R, Henry L, Müller K, Vaughan D (2023). dplyr: A Grammar of Data Manipulation. R package version 1.1.4, https://github.com/tidyverse/dplyr, https://dplyr.tidyverse.org.
+
+-   Sievert C (2020). Interactive Web-Based Data Visualization with R, plotly, and shiny. Chapman and Hall/CRC. ISBN 9781138331457, https://plotly-r.com.
+
+-   Grolemund G, Wickham H (2011). “Dates and Times Made Easy with lubridate.” Journal of Statistical Software, 40(3), 1–25. https://www.jstatsoft.org/v40/i03/.
+
+-   Pierce D (2024). ncdf4: Interface to Unidata netCDF (Version 4 or Earlier) Format Data Files. R package version 1.23, https://CRAN.R-project.org/package=ncdf4.
+
+-   Laake, P. V. (2025). Using CF-Compliant Calendars with Climate Projection Data \[R package CFtime version 1.5.1\]. *R-Project.org*. https://cran.r-project.org/package=CFtime
+
+-   Pebesma E, Bivand R (2023). Spatial Data Science: With applications in R. Chapman and Hall/CRC. doi:10.1201/9780429459016, https://r-spatial.org/book/.
+
+-   Pebesma E (2018). “Simple Features for R: Standardized Support for Spatial Vector Data.” The R Journal, 10(1), 439–446. doi:10.32614/RJ-2018-009, https://doi.org/10.32614/RJ-2018-009.
+
+-   Kuhn, Max (2008). “Building Predictive Models in R Using the caret Package.” Journal of Statistical Software, 28(5), 1–26. doi:10.18637/jss.v028.i05, https://www.jstatsoft.org/index.php/jss/article/view/v028i05.
+
+-   Venables WN, Ripley BD (2002). Modern Applied Statistics with S, Fourth edition. Springer, New York. ISBN 0-387-95457-0, https://www.stats.ox.ac.uk/pub/MASS4/.
+
+-   Cheng J, Schloerke B, Karambelkar B, Xie Y (2025). leaflet: Create Interactive Web Maps with the JavaScript 'Leaflet' Library. R package version 2.2.2.9000, https://github.com/rstudio/leaflet, https://rstudio.github.io/leaflet/.
+
+-   Wickham H, Averick M, Bryan J, Chang W, McGowan LD, François R, Grolemund G, Hayes A, Henry L, Hester J, Kuhn M, Pedersen TL, Miller E, Bache SM, Müller K, Ooms J, Robinson D, Seidel DP, Spinu V, Takahashi K, Vaughan D, Wilke C, Woo K, Yutani H (2019). “Welcome to the tidyverse.” Journal of Open Source Software, 4(43), 1686. doi:10.21105/joss.01686.
+
+-   Massicotte P, South A (2025). rnaturalearth: World Map Data from Natural Earth. R package version 1.0.1.9000, https://github.com/ropensci/rnaturalearth, https://docs.ropensci.org/rnaturalearthhires/, https://docs.ropensci.org/rnaturalearth/.
+
+-   Chang W, Cheng J, Allaire J, Sievert C, Schloerke B, Xie Y, Allen J, McPherson J, Dipert A, Borges B (2025). shiny: Web Application Framework for R. R package version 1.10.0.9000, https://github.com/rstudio/shiny, https://shiny.posit.co/.
+
+-   Wickham H (2007). “Reshaping Data with the reshape Package.” Journal of Statistical Software, 21(12), 1–20. http://www.jstatsoft.org/v21/i12/.
+
+-   Xie Y, Cheng J, Tan X (2022). DT: A Wrapper of the JavaScript Library 'DataTables'. R package version 0.23, https://github.com/rstudio/DT.
+
+-   Baptiste Auguie (2015). gridExtra: Miscellaneous Functions for "Grid" Graphics. R package version 2.0.0. http://CRAN.R-project.org/package=gridExtra
